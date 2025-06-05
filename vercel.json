@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "name": "duvall-farmers-market",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_MARKET_NAME": "Duvall Farmers Market",
+    "NEXT_PUBLIC_MARKET_DAY": "thursday",
+    "NEXT_PUBLIC_MARKET_END_TIME": "18:30"
+  }
+} 
