@@ -5,7 +5,7 @@ export interface Vendor {
   contact_phone: string;
   product_type: ProductType;
   api_consent: boolean;
-  payment_method: 'card' | 'cash' | 'both';
+  payment_method: 'square' | 'swipe';
   available_dates: string[];
   created_at: string;
   updated_at: string;
@@ -28,10 +28,15 @@ export interface Product {
   name: string;
   description: string;
   price: number;
+  unit: string;
   image_url?: string;
   category: ProductType;
   available: boolean;
   stock_quantity?: number;
+  minimum_order?: number;
+  maximum_order?: number;
+  organic?: boolean;
+  local?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -42,6 +47,11 @@ export interface MarketDate {
   is_active: boolean;
   start_time: string;
   end_time: string;
+  weather_status: 'scheduled' | 'cancelled' | 'delayed';
+  is_special_event: boolean;
+  event_name?: string;
+  event_description?: string;
+  notes?: string;
   created_at: string;
 }
 
@@ -62,11 +72,24 @@ export interface Order {
   vendor_id: string;
   customer_email: string;
   customer_phone: string;
+  customer_name: string;
   items: CartItem[];
+  subtotal: number;
+  tax: number;
   total: number;
-  status: 'pending' | 'confirmed' | 'ready' | 'completed' | 'cancelled';
+  payment_method: 'card';
+  payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
+  order_status: 'pending' | 'confirmed' | 'ready' | 'completed' | 'cancelled';
+  delivery_address: {
+    street: string;
+    city: string;
+    state: string;
+    zip_code: string;
+    delivery_instructions?: string;
+  };
   order_date: string;
-  pickup_time?: string;
+  order_number: string;
+  special_instructions?: string;
   created_at: string;
   updated_at: string;
 }

@@ -70,6 +70,18 @@ export const vendorService = {
     return data as Vendor;
   },
 
+  // Get vendor by ID
+  async getById(id: string) {
+    const { data, error } = await supabase
+      .from(TABLES.VENDORS)
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data as Vendor;
+  },
+
   // Delete vendor
   async delete(id: string) {
     const { error } = await supabase
@@ -304,11 +316,11 @@ export const orderService = {
   },
 
   // Update order status
-  async updateStatus(id: string, status: Order['status']) {
+  async updateStatus(id: string, order_status: Order['order_status']) {
     const { data, error } = await supabase
       .from(TABLES.ORDERS)
       .update({
-        status,
+        order_status,
         updated_at: new Date().toISOString(),
       })
       .eq('id', id)
@@ -317,6 +329,26 @@ export const orderService = {
 
     if (error) throw error;
     return data as Order;
+  },
+
+  // Get all orders (admin view)
+  async getAll() {
+    const { data, error } = await supabase
+      .from(TABLES.ORDERS)
+      .select(`
+        *,
+        vendors (
+          id,
+          name,
+          contact_email,
+          product_type,
+          payment_method
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data as (Order & { vendors: Vendor })[];
   },
 
   // Get order by ID

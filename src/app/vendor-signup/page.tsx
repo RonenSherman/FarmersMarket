@@ -13,7 +13,7 @@ interface VendorFormData {
   contact_phone: string;
   product_type: ProductType;
   api_consent: boolean;
-  payment_method: 'card' | 'cash' | 'both';
+  payment_method: 'square' | 'swipe';
   available_dates: string[];
 }
 
@@ -88,13 +88,22 @@ export default function VendorSignupPage() {
       console.error('Error submitting vendor application:', error);
       
       // Show user-friendly error message
-      if (error instanceof Error) {
-        if (error.message.includes('duplicate key')) {
-          toast.error('An account with this email already exists. Please use a different email.');
-        } else if (error.message.includes('invalid input')) {
-          toast.error('Please check your form data and try again.');
+      if (error && typeof error === 'object') {
+        // Handle PostgreSQL duplicate key error
+        if ('code' in error && error.code === '23505') {
+          if ('details' in error && typeof error.details === 'string' && error.details.includes('contact_email')) {
+            toast.error('An account with this email already exists. Please use a different email address.');
+          } else {
+            toast.error('This information already exists in our system. Please check your details.');
+          }
+        } else if (error instanceof Error) {
+          if (error.message.includes('invalid input')) {
+            toast.error('Please check your form data and try again.');
+          } else {
+            toast.error('Failed to submit application. Please try again or contact support.');
+          }
         } else {
-          toast.error('Failed to submit application. Please try again or contact support.');
+          toast.error('Failed to submit application. Please try again.');
         }
       } else {
         toast.error('Failed to submit application. Please try again.');
@@ -199,38 +208,32 @@ export default function VendorSignupPage() {
               </div>
             </div>
 
-            {/* Payment Method */}
+            {/* Card Reader System */}
             <div>
               <label className="block text-sm font-medium text-earth-700 mb-2">
-                Payment Methods Accepted *
+                Card Reader System *
               </label>
+              <p className="text-sm text-earth-600 mb-3">
+                All payments are processed online with card only. Please select your preferred card reader system for order fulfillment verification.
+              </p>
               <div className="space-y-2">
                 <label className="flex items-center">
                   <input
                     type="radio"
-                    value="card"
-                    {...register('payment_method', { required: 'Payment method is required' })}
+                    value="square"
+                    {...register('payment_method', { required: 'Card reader system is required' })}
                     className="mr-2"
                   />
-                  Card only (credit/debit)
+                  Square (Square Terminal, Square Reader)
                 </label>
                 <label className="flex items-center">
                   <input
                     type="radio"
-                    value="cash"
-                    {...register('payment_method', { required: 'Payment method is required' })}
+                    value="swipe"
+                    {...register('payment_method', { required: 'Card reader system is required' })}
                     className="mr-2"
                   />
-                  Cash only
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    value="both"
-                    {...register('payment_method', { required: 'Payment method is required' })}
-                    className="mr-2"
-                  />
-                  Both card and cash
+                  Swipe (Stripe Terminal, other systems)
                 </label>
               </div>
               {errors.payment_method && (
