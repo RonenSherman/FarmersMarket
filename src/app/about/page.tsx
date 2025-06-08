@@ -7,10 +7,10 @@ export default function AboutPage() {
       <div className="bg-gradient-to-br from-market-600 to-market-800 text-white py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">
-            About Duvall Farmers Market
+            About Our Online Service
           </h1>
           <p className="text-xl md:text-2xl opacity-90">
-            Connecting our community through fresh, local food and artisan goods since 2010
+            Connecting you to the Duvall Farmers Market with convenient online ordering and delivery
           </p>
         </div>
       </div>
@@ -21,11 +21,20 @@ export default function AboutPage() {
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold text-earth-800 mb-6">Our Mission</h2>
           <p className="text-lg text-earth-600 max-w-3xl mx-auto leading-relaxed">
-            The Duvall Farmers Market exists to strengthen our local community by providing a vibrant 
-            marketplace where local farmers, artisans, and food producers can connect directly with 
-            neighbors and visitors. We believe in supporting sustainable agriculture, promoting local 
-            economic growth, and fostering relationships that make our community stronger.
+            Our online service bridges the gap between busy modern life and the wonderful community tradition 
+            of the Duvall Farmers Market. We make it easy for families to access fresh, local foods and 
+            handmade treasures through convenient online ordering, with delivery right to your door during 
+            market hours. Supporting local vendors has never been more accessible.
           </p>
+          <div className="mt-6 p-4 bg-market-50 rounded-lg max-w-2xl mx-auto">
+            <p className="text-sm text-market-700">
+              <strong>Want to learn about the physical market?</strong><br />
+              Visit the official Duvall Farmers Market website at{' '}
+              <a href="#" className="text-market-600 hover:text-market-800 font-medium underline">
+                www.duvallfarmersmarket.com
+              </a>
+            </p>
+          </div>
         </div>
 
         {/* Values Grid */}
@@ -34,9 +43,9 @@ export default function AboutPage() {
             <div className="w-16 h-16 bg-market-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <SparklesIcon className="h-8 w-8 text-market-600" />
             </div>
-            <h3 className="text-xl font-semibold text-earth-800 mb-2">Sustainability</h3>
+            <h3 className="text-xl font-semibold text-earth-800 mb-2">Convenience</h3>
             <p className="text-earth-600">
-              Supporting environmentally responsible farming practices and reducing food miles.
+              Shop from home and have fresh, local goods delivered during market hours.
             </p>
           </div>
           
@@ -44,9 +53,9 @@ export default function AboutPage() {
             <div className="w-16 h-16 bg-market-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <UsersIcon className="h-8 w-8 text-market-600" />
             </div>
-            <h3 className="text-xl font-semibold text-earth-800 mb-2">Community</h3>
+            <h3 className="text-xl font-semibold text-earth-800 mb-2">Support Local</h3>
             <p className="text-earth-600">
-              Building connections between producers and consumers in our local area.
+              Helping local vendors reach more customers and grow their businesses digitally.
             </p>
           </div>
           
@@ -54,9 +63,9 @@ export default function AboutPage() {
             <div className="w-16 h-16 bg-market-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <HeartIcon className="h-8 w-8 text-market-600" />
             </div>
-            <h3 className="text-xl font-semibold text-earth-800 mb-2">Quality</h3>
+            <h3 className="text-xl font-semibold text-earth-800 mb-2">Accessibility</h3>
             <p className="text-earth-600">
-              Ensuring the highest quality fresh produce and handcrafted goods.
+              Making the farmers market accessible to everyone, regardless of schedule.
             </p>
           </div>
           
@@ -64,114 +73,128 @@ export default function AboutPage() {
             <div className="w-16 h-16 bg-market-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <MapPinIcon className="h-8 w-8 text-market-600" />
             </div>
-            <h3 className="text-xl font-semibold text-earth-800 mb-2">Local Focus</h3>
+            <h3 className="text-xl font-semibold text-earth-800 mb-2">Technology</h3>
             <p className="text-earth-600">
-              Prioritizing vendors and producers from the greater Duvall area.
+              Using modern technology to preserve and extend traditional market values.
             </p>
           </div>
         </div>
 
         {/* History Section */}
         <div className="bg-white rounded-lg shadow-md p-8 mb-16">
-          <h2 className="text-3xl font-bold text-earth-800 mb-6 text-center">Our Story</h2>
+          <h2 className="text-3xl font-bold text-earth-800 mb-6 text-center">How It Started</h2>
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
               <p className="text-earth-600 mb-4">
-                The Duvall Farmers Market began in 2010 as a small gathering of local farmers 
-                who wanted to sell their fresh produce directly to their neighbors. What started 
-                with just five vendors has grown into a thriving weekly market featuring over 
-                20 local businesses.
+                The Duvall Farmers Market has been bringing folks together since May 2006 at 
+                Taylor Landing Park, creating a beloved weekly tradition of fresh foods, 
+                handmade treasures, and community connection.
               </p>
               <p className="text-earth-600 mb-4">
-                Located in the heart of Duvall at the Civic Center, our market has become a 
-                beloved community tradition. Every Thursday afternoon, families, friends, and 
-                neighbors gather to shop for fresh, local goods while enjoying the vibrant 
-                atmosphere of our small town.
+                Founded in 2025, our online service was created to help local vendors branch 
+                out beyond just the physical market. We recognized that many families wanted 
+                to support local businesses but couldn't always make it to the Thursday market 
+                due to work schedules, family commitments, or other constraints.
               </p>
               <p className="text-earth-600">
-                In 2024, we launched our online ordering system to make it even easier for 
-                busy families to access fresh, local food. Customers can now browse vendor 
-                offerings, place orders online, and pick them up at the market.
+                Our digital platform preserves the personal touch of the farmers market while 
+                adding modern convenience. Vendors can showcase their products online, customers 
+                can shop from home, and we deliver fresh, local goods right to your door during 
+                market hours - bridging traditional community commerce with today's lifestyle needs.
               </p>
             </div>
             <div className="bg-earth-50 rounded-lg p-6">
-              <h3 className="text-xl font-semibold text-earth-800 mb-4">Market Facts</h3>
+              <h3 className="text-xl font-semibold text-earth-800 mb-4">Online Service Facts</h3>
               <ul className="space-y-2 text-earth-600">
-                <li><strong>Established:</strong> 2010</li>
-                <li><strong>Location:</strong> Duvall Civic Center</li>
-                <li><strong>Schedule:</strong> Every Thursday, 3:00 PM - 6:30 PM</li>
-                <li><strong>Vendors:</strong> 20+ local businesses</li>
-                <li><strong>Season:</strong> Year-round operation</li>
-                <li><strong>Visitors:</strong> 500+ weekly customers</li>
+                <li><strong>Launched:</strong> 2025</li>
+                <li><strong>Delivery Days:</strong> Thursdays, 3:00 PM - 6:30 PM</li>
+                <li><strong>Payment:</strong> Secure card-only transactions</li>
+                <li><strong>Vendor Support:</strong> Square & Swipe integration</li>
+                <li><strong>Delivery Area:</strong> Greater Duvall region</li>
+                <li><strong>Mission:</strong> Connecting community through convenience</li>
               </ul>
             </div>
           </div>
         </div>
 
-        {/* What We Offer */}
+        {/* How It Works */}
         <div className="mb-16">
-          <h2 className="text-3xl font-bold text-earth-800 mb-8 text-center">What You'll Find</h2>
+          <h2 className="text-3xl font-bold text-earth-800 mb-8 text-center">How Our Service Works</h2>
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-semibold text-earth-800 mb-4">Fresh Produce</h3>
-              <ul className="text-earth-600 space-y-2">
-                <li>• Seasonal fruits and vegetables</li>
-                <li>• Organic and conventional options</li>
-                <li>• Herbs and microgreens</li>
-                <li>• Farm-fresh eggs</li>
-                <li>• Locally grown flowers</li>
-              </ul>
+            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+              <div className="w-16 h-16 bg-market-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-market-600">1</span>
+              </div>
+              <h3 className="text-xl font-semibold text-earth-800 mb-4">Browse & Order</h3>
+              <p className="text-earth-600">
+                Shop online from participating vendors. View products, read descriptions, 
+                and add items to your cart from multiple vendors at once.
+              </p>
             </div>
             
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-semibold text-earth-800 mb-4">Artisan Foods</h3>
-              <ul className="text-earth-600 space-y-2">
-                <li>• Fresh baked breads and pastries</li>
-                <li>• Local honey and maple syrup</li>
-                <li>• Artisan cheeses and dairy</li>
-                <li>• Homemade jams and preserves</li>
-                <li>• Specialty sauces and condiments</li>
-              </ul>
+            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+              <div className="w-16 h-16 bg-market-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-market-600">2</span>
+              </div>
+              <h3 className="text-xl font-semibold text-earth-800 mb-4">Secure Payment</h3>
+              <p className="text-earth-600">
+                Pay safely with your credit or debit card. We use secure payment processing 
+                integrated with each vendor's Square or Swipe system.
+              </p>
             </div>
             
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-semibold text-earth-800 mb-4">Handcrafted Goods</h3>
-              <ul className="text-earth-600 space-y-2">
-                <li>• Handmade soaps and skincare</li>
-                <li>• Local artwork and crafts</li>
-                <li>• Pottery and ceramics</li>
-                <li>• Jewelry and accessories</li>
-                <li>• Seasonal decorations</li>
-              </ul>
+            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+              <div className="w-16 h-16 bg-market-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl font-bold text-market-600">3</span>
+              </div>
+              <h3 className="text-xl font-semibold text-earth-800 mb-4">Thursday Delivery</h3>
+              <p className="text-earth-600">
+                Receive your fresh, local goods delivered to your door every Thursday 
+                between 3:00 PM and 6:30 PM during market hours.
+              </p>
             </div>
           </div>
         </div>
 
         {/* Contact Information */}
         <div className="bg-market-50 rounded-lg p-8 text-center">
-          <h2 className="text-3xl font-bold text-earth-800 mb-6">Visit Us</h2>
+          <h2 className="text-3xl font-bold text-earth-800 mb-6">Get Started</h2>
           <div className="grid md:grid-cols-2 gap-8">
             <div>
-              <h3 className="text-xl font-semibold text-earth-800 mb-4">Market Hours</h3>
+              <h3 className="text-xl font-semibold text-earth-800 mb-4">Delivery Schedule</h3>
               <p className="text-earth-600 mb-2">Every Thursday</p>
               <p className="text-earth-600 mb-4">3:00 PM - 6:30 PM</p>
-              <p className="text-sm text-earth-500">Rain or shine, year-round</p>
+              <p className="text-sm text-earth-500">Same day as the physical market</p>
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-earth-800 mb-4">Location</h3>
-              <p className="text-earth-600 mb-2">Duvall Civic Center</p>
-              <p className="text-earth-600 mb-4">15535 Main St NE<br />Duvall, WA 98019</p>
-              <p className="text-sm text-earth-500">Free parking available</p>
+              <h3 className="text-xl font-semibold text-earth-800 mb-4">Service Area</h3>
+              <p className="text-earth-600 mb-2">Greater Duvall Region</p>
+              <p className="text-earth-600 mb-4">Delivery to your door</p>
+              <p className="text-sm text-earth-500">Card-only payments accepted</p>
             </div>
           </div>
           
           <div className="mt-8 pt-8 border-t border-market-200">
             <p className="text-earth-600 mb-4">
-              Questions about the market or interested in becoming a vendor?
+              Questions about our online service or interested in becoming a vendor?
             </p>
-            <p className="text-earth-600">
+            <p className="text-earth-600 mb-4">
               Email us at <a href="mailto:info@duvallmarket.com" className="text-market-600 hover:text-market-700 font-medium">info@duvallmarket.com</a>
             </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <a 
+                href="/shop" 
+                className="bg-market-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-market-700 transition-colors"
+              >
+                Start Shopping Online
+              </a>
+              <a 
+                href="/vendor-signup" 
+                className="bg-white text-market-600 border-2 border-market-600 px-8 py-3 rounded-lg font-medium hover:bg-market-50 transition-colors"
+              >
+                Become a Vendor
+              </a>
+            </div>
           </div>
         </div>
       </div>

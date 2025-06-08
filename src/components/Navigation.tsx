@@ -18,9 +18,11 @@ const Navigation = () => {
 
   const menuItems = [
     { name: 'Home', href: '/' },
+    { name: 'Shop', href: '/shop' },
     { name: 'Calendar', href: '/calendar' },
     { name: 'About Us', href: '/about' },
     { name: 'Vendor Sign-up', href: '/vendor-signup' },
+    { name: 'Admin', href: '/admin' },
   ];
 
   return (
