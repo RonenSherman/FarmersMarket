@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
 import { vendorService } from '@/lib/database';
@@ -20,8 +20,14 @@ interface VendorFormData {
 export default function VendorSignupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [isClient, setIsClient] = useState(false);
   
   const { register, handleSubmit, formState: { errors }, reset } = useForm<VendorFormData>();
+
+  // Ensure we're in client-side environment
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Generate next 12 Thursdays for date selection
   const generateThursdayDates = () => {
@@ -112,6 +118,18 @@ export default function VendorSignupPage() {
       setIsSubmitting(false);
     }
   };
+
+  // Don't render form until client-side to prevent hydration issues
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-earth-50 py-12 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-market-600 mx-auto"></div>
+          <p className="mt-4 text-earth-600">Loading vendor signup form...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-earth-50 py-12">
