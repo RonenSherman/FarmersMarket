@@ -15,7 +15,11 @@ Location of your files: `C:\projects\FarmersMarket\duvall-farmers-market\out`
 2. Sign up for free
 3. Click "Import Project"
 4. Upload your project folder
-5. Deploy!
+5. **Important**: Add these environment variables in Vercel:
+   - `NEXT_PUBLIC_SUPABASE_URL`: https://clulowliyjqtcmuyqbkz.supabase.co
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: [your Supabase anon key]
+   - `ADMIN_PASSWORD`: admin123
+6. Deploy!
 
 ### Option 3: GitHub Pages
 1. Create a GitHub repository

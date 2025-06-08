@@ -45,17 +45,30 @@ export default function AdminPage() {
     weather_status: 'scheduled' as const
   });
 
-  // Admin password - in production, this should be environment variable
-  const ADMIN_PASSWORD = 'farmersmarket2024';
-
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      setState(prev => ({ ...prev, isAuthenticated: true }));
-      loadAdminData();
-      toast.success('Welcome to admin panel');
-    } else {
-      toast.error('Invalid password');
+    
+    try {
+      const response = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setState(prev => ({ ...prev, isAuthenticated: true }));
+        loadAdminData();
+        toast.success('Welcome to admin panel');
+      } else {
+        toast.error('Invalid password');
+      }
+    } catch (error) {
+      console.error('Error authenticating:', error);
+      toast.error('Authentication failed');
     }
   };
 
