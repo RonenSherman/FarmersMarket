@@ -14,8 +14,21 @@ export default function CartPage() {
   const handleQuantityChange = (vendorId: string, productId: string, newQuantity: number) => {
     if (newQuantity < 1) {
       removeFromCart(vendorId, productId);
-    } else {
+      return;
+    }
+    
+    try {
       updateCartQuantity(vendorId, productId, newQuantity);
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes('available')) {
+          toast.error(`📦 ${error.message}`);
+        } else {
+          toast.error(`⚠️ ${error.message}`);
+        }
+      } else {
+        toast.error('Unable to update quantity');
+      }
     }
   };
 
@@ -37,33 +50,33 @@ export default function CartPage() {
 
   if (carts.length === 0) {
     return (
-      <div className="min-h-screen bg-earth-50 py-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <ShoppingBagIcon className="h-24 w-24 text-earth-300 mx-auto mb-6" />
-            <h1 className="text-3xl font-bold text-earth-800 mb-4">Your Cart is Empty</h1>
-            <p className="text-lg text-earth-600 mb-8">
-              Start shopping to add items to your cart
-            </p>
-            <Link href="/" className="btn-primary text-lg px-8 py-3">
-              Browse Market
-            </Link>
-          </div>
+          <div className="min-h-screen bg-earth-50 py-8 sm:py-12">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center">
+          <ShoppingBagIcon className="h-16 sm:h-24 w-16 sm:w-24 text-earth-300 mx-auto mb-4 sm:mb-6" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-earth-800 mb-3 sm:mb-4">Your Cart is Empty</h1>
+          <p className="text-base sm:text-lg text-earth-600 mb-6 sm:mb-8">
+            Start shopping to add items to your cart
+          </p>
+          <Link href="/" className="btn-primary text-base sm:text-lg px-6 sm:px-8 py-2 sm:py-3">
+            Browse Market
+          </Link>
         </div>
       </div>
+    </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-earth-50 py-12">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-earth-800 mb-8">Your Cart</h1>
+    <div className="min-h-screen bg-earth-50 py-6 sm:py-12">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-earth-800 mb-6 sm:mb-8">Your Cart</h1>
         
         <div className="space-y-8">
           {carts.map((cart) => (
-            <div key={cart.vendor_id} className="bg-white rounded-lg shadow-md p-6">
+            <div key={cart.vendor_id} className="bg-white rounded-lg shadow-md p-4 sm:p-6">
               {/* Vendor Header */}
-              <div className="flex justify-between items-center mb-6 pb-4 border-b border-earth-200">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 pb-4 border-b border-earth-200 space-y-2 sm:space-y-0">
                 <h2 className="text-2xl font-semibold text-earth-800">
                   {cart.vendor_name}
                 </h2>
@@ -78,16 +91,16 @@ export default function CartPage() {
               {/* Cart Items */}
               <div className="space-y-4 mb-6">
                 {cart.items.map((item) => (
-                  <div key={item.product.id} className="flex items-center justify-between py-4 border-b border-earth-100">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-earth-800">{item.product.name}</h3>
-                      <p className="text-sm text-earth-600">{item.product.description}</p>
-                      <p className="text-lg font-medium text-market-600 mt-1">
-                        {formatCurrency(item.product.price)} each
-                      </p>
-                    </div>
-                    
-                    <div className="flex items-center space-x-4">
+                                  <div key={item.product.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-earth-100 space-y-3 sm:space-y-0">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-earth-800">{item.product.name}</h3>
+                    <p className="text-sm text-earth-600 hidden sm:block">{item.product.description}</p>
+                    <p className="text-base sm:text-lg font-medium text-market-600 mt-1">
+                      {formatCurrency(item.product.price)} each
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center justify-between sm:justify-end space-x-3 sm:space-x-4">
                       {/* Quantity Controls */}
                       <div className="flex items-center space-x-2">
                         <button
@@ -125,14 +138,14 @@ export default function CartPage() {
               </div>
 
               {/* Checkout Section */}
-              <div className="flex justify-between items-center pt-4">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pt-4 space-y-3 sm:space-y-0">
                 <div className="text-sm text-earth-600">
                   <p>Payment will be processed directly with {cart.vendor_name}</p>
-                  <p>Complete your order details and pickup information</p>
+                  <p className="hidden sm:block">Complete your order details and pickup information</p>
                 </div>
                 <Link
                   href={`/checkout/${cart.vendor_id}`}
-                  className="btn-primary px-8 py-3 inline-block text-center"
+                  className="btn-primary px-6 sm:px-8 py-2 sm:py-3 inline-block text-center w-full sm:w-auto text-sm sm:text-base"
                 >
                   Checkout {formatCurrency(cart.total)}
                 </Link>

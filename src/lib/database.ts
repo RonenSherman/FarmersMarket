@@ -191,6 +191,38 @@ export const productService = {
       .eq('id', id);
 
     if (error) throw error;
+  },
+
+  // Reduce stock quantity when item is purchased
+  async reduceStock(id: string, quantityToReduce: number) {
+    // First get current stock
+    const { data: product, error: getError } = await supabase
+      .from(TABLES.PRODUCTS)
+      .select('stock_quantity')
+      .eq('id', id)
+      .single();
+
+    if (getError) throw getError;
+
+    if (product.stock_quantity === null || product.stock_quantity === undefined) {
+      // If no stock tracking, just return
+      return;
+    }
+
+    const newStock = Math.max(0, product.stock_quantity - quantityToReduce);
+
+    const { data, error } = await supabase
+      .from(TABLES.PRODUCTS)
+      .update({
+        stock_quantity: newStock,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as Product;
   }
 };
 
@@ -281,6 +313,26 @@ export const orderService = {
 
     if (error) throw error;
     return data as Order;
+  },
+
+  // Create order and reduce inventory
+  async createWithInventoryUpdate(orderData: Omit<Order, 'id' | 'created_at' | 'updated_at'>) {
+    // First, reduce inventory for all items
+    const inventoryUpdates = orderData.items.map(async (item) => {
+      return productService.reduceStock(item.product.id, item.quantity);
+    });
+
+    try {
+      // Execute all inventory updates
+      await Promise.all(inventoryUpdates);
+
+      // Create the order
+      const order = await this.create(orderData);
+      return order;
+    } catch (error) {
+      // If inventory update fails, don't create the order
+      throw new Error('Unable to process order: insufficient inventory or system error');
+    }
   },
 
   // Get orders by vendor

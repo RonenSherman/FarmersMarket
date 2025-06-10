@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { vendorService, productService, marketDateService, orderService } from '@/lib/database';
-import PhotoUpload from '@/components/PhotoUpload';
+import CameraUpload from '@/components/CameraUpload';
+import { notificationService } from '@/lib/notifications';
 import type { Vendor, Product, MarketDate, Order } from '@/types';
 
 interface AdminState {
@@ -45,13 +46,14 @@ export default function AdminPage() {
     weather_status: 'scheduled' as const
   });
 
-  // Admin password - in production, this should be environment variable
-  const ADMIN_PASSWORD = 'farmersmarket2024';
+  // Admin password from environment variable
+  const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'farmersmarket2024';
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === ADMIN_PASSWORD) {
       setState(prev => ({ ...prev, isAuthenticated: true }));
+      notificationService.setAdminLoginStatus(true);
       loadAdminData();
       toast.success('Welcome to admin panel');
     } else {
@@ -265,20 +267,20 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-earth-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-3xl font-bold text-earth-800">Admin Dashboard</h1>
+    <div className="min-h-screen bg-earth-50 py-4 sm:py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 space-y-3 sm:space-y-0">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <h1 className="text-2xl sm:text-3xl font-bold text-earth-800">Admin Dashboard</h1>
             {state.newOrdersCount > 0 && (
-              <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold animate-pulse">
+              <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold animate-pulse self-start sm:self-auto">
                 {state.newOrdersCount} New Order{state.newOrdersCount > 1 ? 's' : ''}!
               </div>
             )}
           </div>
           <button
             onClick={() => setState(prev => ({ ...prev, isAuthenticated: false }))}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 w-full sm:w-auto"
           >
             Logout
           </button>
@@ -344,7 +346,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Vendors Section */}
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-bold text-earth-800 mb-4">
@@ -443,12 +445,13 @@ export default function AdminPage() {
                   <label className="block text-sm font-medium text-earth-700 mb-3">
                     Product Photo
                   </label>
-                  <PhotoUpload
-                    onPhotoSelected={setSelectedPhoto}
-                    currentImageUrl={newProductForm.image_url}
+                  <CameraUpload
+                    onImageCapture={setSelectedPhoto}
+                    existingImage={newProductForm.image_url}
+                    className="mb-4"
                   />
                   
-                  <div className="mt-4">
+                  <div>
                     <label className="block text-sm font-medium text-earth-700 mb-1">
                       Or enter image URL
                     </label>

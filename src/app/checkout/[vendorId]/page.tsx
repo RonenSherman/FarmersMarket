@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { useMarketStore } from '@/store/marketStore';
 import { vendorService, orderService } from '@/lib/database';
+import { notificationService } from '@/lib/notifications';
 import type { Vendor, VendorCart } from '@/types';
 
 export default function VendorCheckoutPage() {
@@ -64,6 +65,8 @@ export default function VendorCheckoutPage() {
 
     setSubmitting(true);
     try {
+      const orderNumber = `ORD-${Date.now()}`;
+      
       await orderService.create({
         vendor_id: vendorId,
         customer_email: customerInfo.email,
@@ -78,8 +81,16 @@ export default function VendorCheckoutPage() {
         order_status: 'pending',
         delivery_address: customerInfo.delivery_address,
         order_date: new Date().toISOString().split('T')[0],
-        order_number: `ORD-${Date.now()}`,
+        order_number: orderNumber,
         special_instructions: customerInfo.special_instructions || undefined
+      });
+
+      // Send admin notification
+      await notificationService.sendNewOrderNotification({
+        orderNumber,
+        customerName: customerInfo.name,
+        vendorName: vendor.name,
+        total: vendorCart.total
       });
 
       clearCart(vendorId);

@@ -11,6 +11,8 @@ interface MarketStore {
   products: Product[];
   setVendors: (vendors: Vendor[]) => void;
   setProducts: (products: Product[]) => void;
+  updateProductStock: (productId: string, newStock: number) => void;
+  getAvailableStock: (productId: string) => number;
   
   // Cart management
   carts: VendorCart[];
@@ -38,11 +40,54 @@ export const useMarketStore = create<MarketStore>((set, get) => ({
   products: [],
   setVendors: (vendors) => set({ vendors }),
   setProducts: (products) => set({ products }),
+  updateProductStock: (productId, newStock) => {
+    const { products } = get();
+    const updatedProducts = products.map(product => 
+      product.id === productId 
+        ? { ...product, stock_quantity: newStock }
+        : product
+    );
+    set({ products: updatedProducts });
+  },
   
   carts: [],
   
   addToCart: (vendorId, vendorName, product, quantity) => {
-    const { carts } = get();
+    const { carts, products } = get();
+    
+    // Get the most up-to-date product info from the store
+    const currentProduct = products.find(p => p.id === product.id) || product;
+    
+    // Check if product is available
+    if (!currentProduct.available) {
+      throw new Error('This product is no longer available');
+    }
+    
+    // Check stock quantity if defined
+    if (currentProduct.stock_quantity !== undefined) {
+      // Get current quantity in cart for this product from ALL carts (not just this vendor)
+      let totalInCart = 0;
+      carts.forEach(cart => {
+        const item = cart.items.find(item => item.product.id === currentProduct.id);
+        if (item) totalInCart += item.quantity;
+      });
+      
+      const availableStock = currentProduct.stock_quantity;
+      const remainingStock = availableStock - totalInCart;
+      
+      if (availableStock <= 0) {
+        throw new Error('This product is out of stock');
+      }
+      
+      if (remainingStock <= 0) {
+        throw new Error('This product is out of stock (all remaining items are in your cart)');
+      }
+      
+      if (quantity > remainingStock) {
+        throw new Error(`Only ${remainingStock} more items available`);
+      }
+    }
+    
     const existingCartIndex = carts.findIndex(cart => cart.vendor_id === vendorId);
     
     if (existingCartIndex >= 0) {
@@ -74,14 +119,22 @@ export const useMarketStore = create<MarketStore>((set, get) => ({
       
       set({ carts: [...carts, newCart] });
     }
+    
+    // Don't reduce stock here - only reduce when order is actually placed
+    // Stock reduction will happen in the checkout process
   },
   
   removeFromCart: (vendorId, productId) => {
-    const { carts } = get();
+    const { carts, products } = get();
     const cartIndex = carts.findIndex(cart => cart.vendor_id === vendorId);
     
     if (cartIndex >= 0) {
       const cart = carts[cartIndex];
+      const itemToRemove = cart.items.find(item => item.product.id === productId);
+      
+      // No need to return stock since we don't reduce it when adding to cart
+      // Stock is only reduced during actual order placement
+      
       cart.items = cart.items.filter(item => item.product.id !== productId);
       cart.total = cart.items.reduce((total, item) => 
         total + (item.product.price * item.quantity), 0
@@ -102,7 +155,7 @@ export const useMarketStore = create<MarketStore>((set, get) => ({
       return;
     }
     
-    const { carts } = get();
+    const { carts, products } = get();
     const cartIndex = carts.findIndex(cart => cart.vendor_id === vendorId);
     
     if (cartIndex >= 0) {
@@ -110,6 +163,29 @@ export const useMarketStore = create<MarketStore>((set, get) => ({
       const itemIndex = cart.items.findIndex(item => item.product.id === productId);
       
       if (itemIndex >= 0) {
+        const currentItem = cart.items[itemIndex];
+        const product = products.find(p => p.id === productId);
+        const oldQuantity = currentItem.quantity;
+        const quantityDifference = quantity - oldQuantity;
+        
+        // Check stock limit against available stock (considering all cart items)
+        if (product && product.stock_quantity !== undefined) {
+          let totalInAllCarts = 0;
+          get().carts.forEach(c => {
+            const item = c.items.find(i => i.product.id === productId);
+            if (item) totalInAllCarts += item.quantity;
+          });
+          
+          // Subtract the old quantity and add the new quantity to get the new total
+          const newTotalInCarts = totalInAllCarts - oldQuantity + quantity;
+          
+          if (newTotalInCarts > product.stock_quantity) {
+            const available = product.stock_quantity - (totalInAllCarts - oldQuantity);
+            throw new Error(`Only ${available} items available`);
+          }
+        }
+        
+        // Update cart quantity
         cart.items[itemIndex].quantity = quantity;
         cart.total = cart.items.reduce((total, item) => 
           total + (item.product.price * item.quantity), 0
@@ -121,11 +197,35 @@ export const useMarketStore = create<MarketStore>((set, get) => ({
   },
   
   clearCart: (vendorId) => {
-    set({ carts: get().carts.filter(cart => cart.vendor_id !== vendorId) });
+    const { carts, products } = get();
+    const cartToRemove = carts.find(cart => cart.vendor_id === vendorId);
+    
+    // No need to return stock since we don't reduce it when adding to cart
+    // Stock is only reduced during actual order placement
+    
+    set({ carts: carts.filter(cart => cart.vendor_id !== vendorId) });
   },
   
   clearAllCarts: () => {
     set({ carts: [] });
+  },
+  
+  getAvailableStock: (productId) => {
+    const { products, carts } = get();
+    const product = products.find(p => p.id === productId);
+    
+    if (!product || product.stock_quantity === undefined) {
+      return 0;
+    }
+    
+    // Calculate total quantity in all carts for this product
+    let totalInCarts = 0;
+    carts.forEach(cart => {
+      const item = cart.items.find(item => item.product.id === productId);
+      if (item) totalInCarts += item.quantity;
+    });
+    
+    return Math.max(0, product.stock_quantity - totalInCarts);
   },
   
   isLoading: false,
