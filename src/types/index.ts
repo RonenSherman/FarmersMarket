@@ -116,22 +116,16 @@ export interface Order {
   id: string;
   vendor_id: string;
   customer_email: string;
-  customer_phone: string;
+  customer_phone?: string;
   customer_name: string;
   items: CartItem[];
   subtotal: number;
   tax: number;
   total: number;
-  payment_method: 'card';
+  payment_method: 'card' | 'cash';
   payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
   order_status: 'pending' | 'confirmed' | 'ready' | 'completed' | 'cancelled';
-  delivery_address: {
-    street: string;
-    city: string;
-    state: string;
-    zip_code: string;
-    delivery_instructions?: string;
-  };
+  pickup_time?: string;
   order_date: string;
   order_number: string;
   special_instructions?: string;

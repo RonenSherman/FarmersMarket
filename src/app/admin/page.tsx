@@ -390,12 +390,17 @@ export default function AdminPage() {
                       </div>
                       <p className="text-sm text-earth-600">👤 {order.customer_name}</p>
                       <p className="text-sm text-earth-600">📧 {order.customer_email}</p>
+                      {order.customer_phone && (
+                        <p className="text-sm text-earth-600">📞 {order.customer_phone}</p>
+                      )}
                       <p className="text-sm text-earth-600">🏪 {order.vendors.name}</p>
                       <p className="text-sm text-earth-600">💰 ${order.total.toFixed(2)}</p>
-                      <p className="text-sm text-earth-600">📍 {order.delivery_address.street}, {order.delivery_address.city}</p>
                       <p className="text-sm text-earth-500">📅 {new Date(order.created_at).toLocaleDateString()}</p>
                       {order.special_instructions && (
-                        <p className="text-sm text-earth-600 mt-1">📝 {order.special_instructions}</p>
+                        <div className="mt-2 p-2 bg-earth-50 rounded text-sm text-earth-600">
+                          <strong>📝 Order Details:</strong>
+                          <pre className="whitespace-pre-wrap font-sans text-xs mt-1">{order.special_instructions}</pre>
+                        </div>
                       )}
                     </div>
                     <div className="flex flex-col space-y-2">

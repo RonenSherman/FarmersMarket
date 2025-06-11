@@ -7,6 +7,7 @@ import { useMarketStore } from '@/store/marketStore';
 import { vendorService, orderService } from '@/lib/database';
 import { notificationService } from '@/lib/notifications';
 import type { Vendor, VendorCart } from '@/types';
+import { PRICING_UNIT_LABELS } from '@/types';
 
 export default function VendorCheckoutPage() {
   const params = useParams();
@@ -67,6 +68,14 @@ export default function VendorCheckoutPage() {
     try {
       const orderNumber = `ORD-${Date.now()}`;
       
+      // Combine delivery address and special instructions
+      const deliveryInfo = `DELIVERY ADDRESS:
+${customerInfo.delivery_address.street}
+${customerInfo.delivery_address.city}, ${customerInfo.delivery_address.state} ${customerInfo.delivery_address.zip_code}
+${customerInfo.delivery_address.delivery_instructions ? `Instructions: ${customerInfo.delivery_address.delivery_instructions}` : ''}
+
+${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.special_instructions}` : ''}`.trim();
+
       await orderService.create({
         vendor_id: vendorId,
         customer_email: customerInfo.email,
@@ -79,10 +88,9 @@ export default function VendorCheckoutPage() {
         payment_method: 'card',
         payment_status: 'pending',
         order_status: 'pending',
-        delivery_address: customerInfo.delivery_address,
         order_date: new Date().toISOString().split('T')[0],
         order_number: orderNumber,
-        special_instructions: customerInfo.special_instructions || undefined
+        special_instructions: deliveryInfo
       });
 
       // Send admin notification
@@ -160,7 +168,7 @@ export default function VendorCheckoutPage() {
                       )}
                       <div>
                         <h3 className="font-medium text-earth-800">{item.product.name}</h3>
-                        <p className="text-sm text-earth-600">${item.product.price.toFixed(2)} each</p>
+                        <p className="text-sm text-earth-600">${item.product.price.toFixed(2)} per {PRICING_UNIT_LABELS[item.product.unit]}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -237,7 +245,8 @@ export default function VendorCheckoutPage() {
 
               {/* Delivery Address */}
               <div className="space-y-4">
-                <h3 className="text-lg font-medium text-earth-800">Delivery Address</h3>
+                <h3 className="text-lg font-medium text-earth-800">Delivery Information</h3>
+                <p className="text-sm text-earth-600">We deliver fresh products to your door during market hours (Thursday 3:00-6:30 PM)</p>
                 
                 <div>
                   <label htmlFor="street" className="block text-sm font-medium text-earth-700 mb-2">
