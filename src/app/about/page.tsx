@@ -30,8 +30,8 @@ export default function AboutPage() {
             <p className="text-sm text-market-700">
               <strong>Want to learn about the physical market?</strong><br />
               Visit the official Duvall Farmers Market website at{' '}
-              <a href="#" className="text-market-600 hover:text-market-800 font-medium underline">
-                www.duvallfarmersmarket.com
+              <a href="https://duvallfarmersmarket.org/" target="_blank" rel="noopener noreferrer" className="text-market-600 hover:text-market-800 font-medium underline">
+                duvallfarmersmarket.org
               </a>
             </p>
           </div>

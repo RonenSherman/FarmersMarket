@@ -1,15 +1,38 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMarketStore } from '@/store/marketStore';
 import { formatCurrency } from '@/lib/utils';
 import { MinusIcon, PlusIcon, TrashIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
 import Link from 'next/link';
+import { PRICING_UNIT_LABELS, PricingUnit } from '@/types';
 
 export default function CartPage() {
   const { carts, updateCartQuantity, removeFromCart, clearCart } = useMarketStore();
   const [checkoutVendor, setCheckoutVendor] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Debug logging
+  useEffect(() => {
+    if (mounted) {
+      console.log('Cart page mounted, carts:', carts);
+      console.log('Carts length:', carts.length);
+      carts.forEach((cart, index) => {
+        console.log(`Cart ${index}:`, {
+          vendor_id: cart.vendor_id,
+          vendor_name: cart.vendor_name,
+          items: cart.items.length,
+          total: cart.total
+        });
+      });
+    }
+  }, [carts, mounted]);
 
   const handleQuantityChange = (vendorId: string, productId: string, newQuantity: number) => {
     if (newQuantity < 1) {
@@ -48,22 +71,27 @@ export default function CartPage() {
     }
   };
 
+  // Prevent hydration mismatch
+  if (!mounted) {
+    return null;
+  }
+
   if (carts.length === 0) {
     return (
           <div className="min-h-screen bg-earth-50 py-8 sm:py-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
           <ShoppingBagIcon className="h-16 sm:h-24 w-16 sm:w-24 text-earth-300 mx-auto mb-4 sm:mb-6" />
           <h1 className="text-2xl sm:text-3xl font-bold text-earth-800 mb-3 sm:mb-4">Your Cart is Empty</h1>
           <p className="text-base sm:text-lg text-earth-600 mb-6 sm:mb-8">
-            Start shopping to add items to your cart
-          </p>
-          <Link href="/" className="btn-primary text-base sm:text-lg px-6 sm:px-8 py-2 sm:py-3">
-            Browse Market
-          </Link>
+              Start shopping to add items to your cart
+            </p>
+          <Link href="/shop" className="btn-primary text-base sm:text-lg px-6 sm:px-8 py-2 sm:py-3">
+              Browse Market
+            </Link>
+          </div>
         </div>
       </div>
-    </div>
     );
   }
 
@@ -92,14 +120,14 @@ export default function CartPage() {
               <div className="space-y-4 mb-6">
                 {cart.items.map((item) => (
                                   <div key={item.product.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-earth-100 space-y-3 sm:space-y-0">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-earth-800">{item.product.name}</h3>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-earth-800">{item.product.name}</h3>
                     <p className="text-sm text-earth-600 hidden sm:block">{item.product.description}</p>
                     <p className="text-base sm:text-lg font-medium text-market-600 mt-1">
-                      {formatCurrency(item.product.price)} each
-                    </p>
-                  </div>
-                  
+                        {formatCurrency(item.product.price)} per {PRICING_UNIT_LABELS[item.product.unit as PricingUnit]}
+                      </p>
+                    </div>
+                    
                   <div className="flex items-center justify-between sm:justify-end space-x-3 sm:space-x-4">
                       {/* Quantity Controls */}
                       <div className="flex items-center space-x-2">

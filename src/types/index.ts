@@ -22,13 +22,58 @@ export type ProductType =
   | 'honey'
   | 'preserves';
 
+export type PricingUnit = 
+  | 'each'
+  | 'lb'
+  | 'kg'
+  | 'oz'
+  | 'dozen'
+  | 'pint'
+  | 'quart'
+  | 'gallon'
+  | 'bunch'
+  | 'bottle'
+  | 'jar'
+  | 'bag'
+  | 'box'
+  | 'case'
+  | 'loaf'
+  | 'slice'
+  | 'piece'
+  | 'yard'
+  | 'sq ft'
+  | 'other';
+
+export const PRICING_UNIT_LABELS: Record<PricingUnit, string> = {
+  'each': 'Each',
+  'lb': 'Pound (lb)',
+  'kg': 'Kilogram (kg)',
+  'oz': 'Ounce (oz)',
+  'dozen': 'Dozen',
+  'pint': 'Pint',
+  'quart': 'Quart',
+  'gallon': 'Gallon',
+  'bunch': 'Bunch',
+  'bottle': 'Bottle',
+  'jar': 'Jar',
+  'bag': 'Bag',
+  'box': 'Box',
+  'case': 'Case',
+  'loaf': 'Loaf',
+  'slice': 'Slice',
+  'piece': 'Piece',
+  'yard': 'Yard',
+  'sq ft': 'Square Foot',
+  'other': 'Other'
+};
+
 export interface Product {
   id: string;
   vendor_id: string;
   name: string;
   description: string;
   price: number;
-  unit: string;
+  unit: PricingUnit;
   image_url?: string;
   category: ProductType;
   available: boolean;

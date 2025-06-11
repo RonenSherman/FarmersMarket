@@ -5,7 +5,8 @@ import { toast } from 'react-hot-toast';
 import { vendorService, productService, marketDateService, orderService } from '@/lib/database';
 import CameraUpload from '@/components/CameraUpload';
 import { notificationService } from '@/lib/notifications';
-import type { Vendor, Product, MarketDate, Order } from '@/types';
+import type { Vendor, Product, MarketDate, Order, PricingUnit } from '@/types';
+import { PRICING_UNIT_LABELS } from '@/types';
 
 interface AdminState {
   isAuthenticated: boolean;
@@ -14,6 +15,7 @@ interface AdminState {
   marketDates: MarketDate[];
   orders: (Order & { vendors: Vendor })[];
   selectedVendor: Vendor | null;
+  editingProduct: Product | null;
   loading: boolean;
   newOrdersCount: number;
 }
@@ -27,6 +29,7 @@ export default function AdminPage() {
     marketDates: [],
     orders: [],
     selectedVendor: null,
+    editingProduct: null,
     loading: false,
     newOrdersCount: 0
   });
@@ -36,6 +39,19 @@ export default function AdminPage() {
     price: '',
     description: '',
     category: 'produce' as const,
+    unit: 'each' as PricingUnit,
+    stock_quantity: '',
+    image_url: ''
+  });
+
+  const [editProductForm, setEditProductForm] = useState({
+    name: '',
+    price: '',
+    description: '',
+    category: 'produce' as any,
+    unit: 'each' as PricingUnit,
+    stock_quantity: '',
+    available: true,
     image_url: ''
   });
 
@@ -141,7 +157,8 @@ export default function AdminPage() {
         description: newProductForm.description,
         category: newProductForm.category,
         image_url: imageUrl || undefined,
-        unit: 'each',
+        unit: newProductForm.unit,
+        stock_quantity: newProductForm.stock_quantity ? parseInt(newProductForm.stock_quantity) : undefined,
         available: true
       });
 
@@ -151,6 +168,8 @@ export default function AdminPage() {
         price: '',
         description: '',
         category: 'produce',
+        unit: 'each',
+        stock_quantity: '',
         image_url: ''
       });
       setSelectedPhoto(null);
@@ -159,6 +178,59 @@ export default function AdminPage() {
       console.error('Error adding product:', error);
       toast.error('Failed to add product');
     }
+  };
+
+  const handleEditProduct = (product: Product) => {
+    setState(prev => ({ ...prev, editingProduct: product }));
+    setEditProductForm({
+      name: product.name,
+      price: product.price.toString(),
+      description: product.description || '',
+      category: product.category,
+      unit: product.unit,
+      stock_quantity: product.stock_quantity?.toString() || '',
+      available: product.available,
+      image_url: product.image_url || ''
+    });
+  };
+
+  const handleUpdateProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!state.editingProduct) return;
+
+    try {
+      await productService.update(state.editingProduct.id, {
+        name: editProductForm.name,
+        price: parseFloat(editProductForm.price),
+        description: editProductForm.description,
+        category: editProductForm.category,
+        unit: editProductForm.unit,
+        stock_quantity: editProductForm.stock_quantity ? parseInt(editProductForm.stock_quantity) : undefined,
+        available: editProductForm.available,
+        image_url: editProductForm.image_url || undefined,
+      });
+
+      toast.success('Product updated successfully');
+      setState(prev => ({ ...prev, editingProduct: null }));
+      loadAdminData();
+    } catch (error) {
+      console.error('Error updating product:', error);
+      toast.error('Failed to update product');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setState(prev => ({ ...prev, editingProduct: null }));
+    setEditProductForm({
+      name: '',
+      price: '',
+      description: '',
+      category: 'produce',
+      unit: 'each',
+      stock_quantity: '',
+      available: true,
+      image_url: ''
+    });
   };
 
   const handleAddMarketDate = async (e: React.FormEvent) => {
@@ -442,9 +514,36 @@ export default function AdminPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-earth-700 mb-3">
-                    Product Photo
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Unit
                   </label>
+                  <select
+                    value={newProductForm.unit}
+                    onChange={(e) => setNewProductForm(prev => ({ ...prev, unit: e.target.value as PricingUnit }))}
+                    className="input-field"
+                  >
+                    {Object.entries(PRICING_UNIT_LABELS).map(([unit, label]) => (
+                      <option key={unit} value={unit}>{label}</option>
+                    ))}
+                                      </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-earth-700 mb-1">
+                      Stock Quantity (optional)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={newProductForm.stock_quantity}
+                      onChange={(e) => setNewProductForm(prev => ({ ...prev, stock_quantity: e.target.value }))}
+                      className="input-field"
+                      placeholder="Leave empty for unlimited"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-earth-700 mb-3">
+                      Product Photo
+                    </label>
                   <CameraUpload
                     onImageCapture={setSelectedPhoto}
                     existingImage={newProductForm.image_url}
@@ -501,8 +600,12 @@ export default function AdminPage() {
                       <div className="flex-1">
                         <h3 className="font-semibold text-earth-800">{product.name}</h3>
                         <p className="text-sm text-earth-600">Vendor: {vendor?.name}</p>
-                        <p className="text-sm text-earth-600">${product.price.toFixed(2)}</p>
+                        <p className="text-sm text-earth-600">${product.price.toFixed(2)} per {PRICING_UNIT_LABELS[product.unit as PricingUnit]}</p>
                         <p className="text-sm text-earth-600 capitalize">{product.category}</p>
+                        {product.stock_quantity !== undefined && (
+                          <p className="text-sm text-earth-600">Stock: {product.stock_quantity}</p>
+                        )}
+                        <p className="text-sm text-earth-600">Status: {product.available ? '✅ Available' : '❌ Unavailable'}</p>
                         {product.image_url && (
                           <img 
                             src={product.image_url} 
@@ -511,18 +614,159 @@ export default function AdminPage() {
                           />
                         )}
                       </div>
-                      <button
-                        onClick={() => handleDeleteProduct(product.id)}
-                        className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
-                      >
-                        Delete
-                      </button>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleEditProduct(product)}
+                          className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduct(product.id)}
+                          className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
           </div>
+
+          {/* Edit Product Section */}
+          {state.editingProduct && (
+            <div className="bg-white rounded-lg shadow-lg p-6 border-2 border-blue-200">
+              <h2 className="text-xl font-bold text-earth-800 mb-4">
+                Edit Product: {state.editingProduct.name}
+              </h2>
+              <form onSubmit={handleUpdateProduct} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Product Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editProductForm.name}
+                    onChange={(e) => setEditProductForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="input-field"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Price ($)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editProductForm.price}
+                    onChange={(e) => setEditProductForm(prev => ({ ...prev, price: e.target.value }))}
+                    className="input-field"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={editProductForm.category}
+                    onChange={(e) => setEditProductForm(prev => ({ ...prev, category: e.target.value as any }))}
+                    className="input-field"
+                  >
+                    <option value="produce">Produce</option>
+                    <option value="baked_goods">Baked Goods</option>
+                    <option value="preserves_sauces">Preserves & Sauces</option>
+                    <option value="dairy_eggs">Dairy & Eggs</option>
+                    <option value="meat_seafood">Meat & Seafood</option>
+                    <option value="beverages">Beverages</option>
+                    <option value="crafts_art">Crafts & Art</option>
+                    <option value="flowers_plants">Flowers & Plants</option>
+                    <option value="prepared_foods">Prepared Foods</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Unit
+                  </label>
+                  <select
+                    value={editProductForm.unit}
+                    onChange={(e) => setEditProductForm(prev => ({ ...prev, unit: e.target.value as PricingUnit }))}
+                    className="input-field"
+                  >
+                    {Object.entries(PRICING_UNIT_LABELS).map(([unit, label]) => (
+                      <option key={unit} value={unit}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Stock Quantity (optional)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editProductForm.stock_quantity}
+                    onChange={(e) => setEditProductForm(prev => ({ ...prev, stock_quantity: e.target.value }))}
+                    className="input-field"
+                    placeholder="Leave empty for unlimited"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Image URL
+                  </label>
+                  <input
+                    type="url"
+                    value={editProductForm.image_url}
+                    onChange={(e) => setEditProductForm(prev => ({ ...prev, image_url: e.target.value }))}
+                    className="input-field"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={editProductForm.description}
+                    onChange={(e) => setEditProductForm(prev => ({ ...prev, description: e.target.value }))}
+                    className="input-field"
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={editProductForm.available}
+                      onChange={(e) => setEditProductForm(prev => ({ ...prev, available: e.target.checked }))}
+                      className="rounded"
+                    />
+                    <span className="text-sm font-medium text-earth-700">Product Available</span>
+                  </label>
+                </div>
+                <div className="flex space-x-4">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"
+                  >
+                    Update Product
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
 
           {/* Market Dates Section */}
           <div className="bg-white rounded-lg shadow-lg p-6">

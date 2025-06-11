@@ -2,19 +2,24 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bars3Icon, XMarkIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
 import { useMarketStore } from '@/store/marketStore';
 import { cn } from '@/lib/utils';
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const { carts } = useMarketStore();
 
-  const totalCartItems = carts.reduce((total, cart) => 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const totalCartItems = mounted ? carts.reduce((total, cart) => 
     total + cart.items.reduce((cartTotal, item) => cartTotal + item.quantity, 0), 0
-  );
+  ) : 0;
 
   const menuItems = [
     { name: 'Home', href: '/' },

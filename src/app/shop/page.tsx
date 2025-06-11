@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { vendorService, productService } from '@/lib/database';
 import { useMarketStore } from '@/store/marketStore';
-import type { Vendor, Product, VendorCart } from '@/types';
+import { MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
+import type { Vendor, Product, VendorCart, PricingUnit } from '@/types';
+import { PRICING_UNIT_LABELS } from '@/types';
 
 export default function ShopPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -12,7 +14,7 @@ export default function ShopPage() {
   const [loading, setLoading] = useState(true);
   const [selectedVendor, setSelectedVendor] = useState<string>('all');
 
-  const { addToCart, carts, products, setProducts, getAvailableStock } = useMarketStore();
+  const { addToCart, carts, products, setProducts, getAvailableStock, removeFromCart, updateCartQuantity } = useMarketStore();
 
   const categories = [
     { value: 'all', label: 'All Products' },
@@ -54,7 +56,7 @@ export default function ShopPage() {
     return categoryMatch && vendorMatch;
   });
 
-  const handleAddToCart = async (product: Product) => {
+  const handleAddToCart = async (product: Product, quantity: number = 1) => {
     const vendor = vendors.find(v => v.id === product.vendor_id);
     if (!vendor) {
       toast.error('Vendor not found');
@@ -62,8 +64,8 @@ export default function ShopPage() {
     }
 
     try {
-      addToCart(product.vendor_id, vendor.name, product, 1);
-      toast.success(`✅ Added ${product.name} to cart`);
+      addToCart(product.vendor_id, vendor.name, product, quantity);
+      toast.success(`✅ Added ${quantity} ${PRICING_UNIT_LABELS[product.unit]} of ${product.name} to cart`);
       
     } catch (error) {
       if (error instanceof Error) {
@@ -78,6 +80,37 @@ export default function ShopPage() {
         }
       } else {
         toast.error('Unable to add item to cart');
+      }
+    }
+  };
+
+  const handleQuantityChange = (product: Product, change: number) => {
+    const currentQuantity = getProductQuantityInCart(product.id, product.vendor_id);
+    const newQuantity = currentQuantity + change;
+    
+    if (newQuantity <= 0) {
+      // Remove from cart
+      if (currentQuantity > 0) {
+        removeFromCart(product.vendor_id, product.id);
+        toast.success(`🗑️ Removed ${product.name} from cart`);
+      }
+      return;
+    }
+    
+    try {
+      if (currentQuantity === 0) {
+        // Add to cart
+        handleAddToCart(product, newQuantity);
+      } else {
+        // Update quantity
+        updateCartQuantity(product.vendor_id, product.id, newQuantity);
+        toast.success(`📦 Updated ${product.name} quantity to ${newQuantity}`);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(`⚠️ ${error.message}`);
+      } else {
+        toast.error('Unable to update quantity');
       }
     }
   };
@@ -167,7 +200,7 @@ export default function ShopPage() {
               const availableStock = getAvailableStock(product.id);
 
               return (
-                <div key={product.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                <div key={product.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow flex flex-col h-full">
                   {/* Product Image */}
                   <div className="h-48 bg-earth-100 relative">
                     {product.image_url ? (
@@ -198,9 +231,10 @@ export default function ShopPage() {
                   </div>
 
                   {/* Product Info */}
-                  <div className="p-3 sm:p-4">
+                  <div className="p-3 sm:p-4 flex flex-col h-full">
+                    {/* Product Header - Fixed Height */}
                     <div className="mb-2">
-                      <h3 className="text-lg font-semibold text-earth-800 mb-1">
+                      <h3 className="text-lg font-semibold text-earth-800 mb-1 line-clamp-2 min-h-[3.5rem]">
                         {product.name}
                       </h3>
                       <p className="text-sm text-earth-600">
@@ -208,67 +242,110 @@ export default function ShopPage() {
                       </p>
                     </div>
 
-                    {product.description && (
-                      <p className="text-sm text-earth-600 mb-3 line-clamp-2">
-                        {product.description}
-                      </p>
-                    )}
-
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xl font-bold text-market-600">
-                        ${product.price.toFixed(2)}
-                      </span>
-                      
-                      {quantityInCart > 0 && (
-                        <span className="bg-market-100 text-market-800 text-sm font-medium px-2 py-1 rounded-full">
-                          {quantityInCart} in cart
-                        </span>
+                    {/* Description - Fixed Height */}
+                    <div className="mb-3 min-h-[3rem]">
+                      {product.description && (
+                        <p className="text-sm text-earth-600 line-clamp-2">
+                          {product.description}
+                        </p>
                       )}
                     </div>
-                    
-                    {/* Action Button - Full Width for Consistency */}
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      disabled={product.stock_quantity !== undefined && availableStock <= 0}
-                      className={`w-full px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
-                        product.stock_quantity !== undefined && availableStock <= 0
-                          ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
-                          : 'bg-market-600 text-white hover:bg-market-700'
-                      }`}
-                    >
-                      {product.stock_quantity !== undefined && availableStock <= 0 
-                        ? '🚫 Out of Stock' 
-                        : '🛒 Add to Cart'
-                      }
-                    </button>
 
-                    {/* Stock Info */}
-                    {product.stock_quantity !== undefined && (
-                      <div className="mt-2">
-                        <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          availableStock > 10 ? 'bg-green-100 text-green-800' :
-                          availableStock > 5 ? 'bg-yellow-100 text-yellow-800' :
-                          availableStock > 0 ? 'bg-orange-100 text-orange-800' :
-                          'bg-red-100 text-red-800'
-                        }`} data-stock-quantity="${availableStock}">
-                          {availableStock > 0 ? (
-                            <>
-                              <span className={`inline-block w-2 h-2 rounded-full mr-1 ${
-                                availableStock > 10 ? 'bg-green-500' :
-                                availableStock > 5 ? 'bg-yellow-500' :
-                                'bg-orange-500'
-                              }`}></span>
-                              {availableStock} left
-                            </>
-                          ) : (
-                            <>
-                              <span className="inline-block w-2 h-2 rounded-full mr-1 bg-red-500"></span>
-                              Out of stock
-                            </>
-                          )}
+                    {/* Price and Cart Info */}
+                    <div className="mb-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <span className="text-xl font-bold text-market-600">
+                            ${product.price.toFixed(2)}
+                          </span>
+                          <span className="text-sm text-earth-600 ml-1">
+                            per {PRICING_UNIT_LABELS[product.unit]}
+                          </span>
                         </div>
+                        
+                        {quantityInCart > 0 && (
+                          <span className="bg-market-100 text-market-800 text-sm font-medium px-2 py-1 rounded-full">
+                            {quantityInCart} in cart
+                          </span>
+                        )}
                       </div>
-                    )}
+                    </div>
+                    
+                    {/* Spacer to push controls to bottom */}
+                    <div className="flex-grow"></div>
+                    
+                    {/* Controls Section - Fixed Height */}
+                    <div className="min-h-[3rem] flex flex-col justify-end">
+                      {/* Quantity Controls or Add Button */}
+                      {quantityInCart > 0 ? (
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-3">
+                            <button
+                              onClick={() => handleQuantityChange(product, -1)}
+                              className="p-2 rounded-full bg-earth-100 hover:bg-earth-200 transition-colors"
+                            >
+                              <MinusIcon className="h-4 w-4 text-earth-600" />
+                            </button>
+                            <span className="font-medium text-earth-800 min-w-[2rem] text-center">
+                              {quantityInCart}
+                            </span>
+                            <button
+                              onClick={() => handleQuantityChange(product, 1)}
+                              disabled={product.stock_quantity !== undefined && availableStock <= quantityInCart}
+                              className="p-2 rounded-full bg-earth-100 hover:bg-earth-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              <PlusIcon className="h-4 w-4 text-earth-600" />
+                            </button>
+                          </div>
+                          <span className="text-sm font-medium text-market-600">
+                            ${(product.price * quantityInCart).toFixed(2)}
+                          </span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleAddToCart(product)}
+                          disabled={product.stock_quantity !== undefined && availableStock <= 0}
+                          className={`w-full px-4 py-2 rounded-lg transition-colors text-sm font-medium mb-2 ${
+                            product.stock_quantity !== undefined && availableStock <= 0
+                              ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
+                              : 'bg-market-600 text-white hover:bg-market-700'
+                          }`}
+                        >
+                          {product.stock_quantity !== undefined && availableStock <= 0 
+                            ? '🚫 Out of Stock' 
+                            : '🛒 Add to Cart'
+                          }
+                        </button>
+                      )}
+
+                      {/* Stock Info - Fixed Height */}
+                      <div className="min-h-[1.5rem]">
+                        {product.stock_quantity !== undefined && (
+                          <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            availableStock > 10 ? 'bg-green-100 text-green-800' :
+                            availableStock > 5 ? 'bg-yellow-100 text-yellow-800' :
+                            availableStock > 0 ? 'bg-orange-100 text-orange-800' :
+                            'bg-red-100 text-red-800'
+                          }`}>
+                            {availableStock > 0 ? (
+                              <>
+                                <span className={`inline-block w-2 h-2 rounded-full mr-1 ${
+                                  availableStock > 10 ? 'bg-green-500' :
+                                  availableStock > 5 ? 'bg-yellow-500' :
+                                  'bg-orange-500'
+                                }`}></span>
+                                {availableStock} left
+                              </>
+                            ) : (
+                              <>
+                                <span className="inline-block w-2 h-2 rounded-full mr-1 bg-red-500"></span>
+                                Out of stock
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
