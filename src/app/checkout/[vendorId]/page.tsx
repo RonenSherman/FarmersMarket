@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import { useMarketStore } from '@/store/marketStore';
 import { vendorService, orderService } from '@/lib/database';
 import { notificationService } from '@/lib/notifications';
+import { customerNotificationService } from '@/lib/customerNotifications';
 import type { Vendor, VendorCart } from '@/types';
 import { PRICING_UNIT_LABELS } from '@/types';
 
@@ -30,7 +31,8 @@ export default function VendorCheckoutPage() {
       zip_code: '',
       delivery_instructions: ''
     },
-    special_instructions: ''
+    special_instructions: '',
+    notification_method: 'email' as 'email' | 'sms' | 'both'
   });
 
   const { carts, clearCart } = useMarketStore();
@@ -76,7 +78,7 @@ ${customerInfo.delivery_address.delivery_instructions ? `Instructions: ${custome
 
 ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.special_instructions}` : ''}`.trim();
 
-      await orderService.create({
+      const newOrder = await orderService.create({
         vendor_id: vendorId,
         customer_email: customerInfo.email,
         customer_phone: customerInfo.phone,
@@ -90,7 +92,8 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
         order_status: 'pending',
         order_date: new Date().toISOString().split('T')[0],
         order_number: orderNumber,
-        special_instructions: deliveryInfo
+        special_instructions: deliveryInfo,
+        notification_method: customerInfo.notification_method
       });
 
       // Send admin notification
@@ -101,8 +104,19 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
         total: vendorCart.total
       });
 
+      // Send customer confirmation email/SMS
+      try {
+        await customerNotificationService.sendOrderConfirmation(
+          { ...newOrder, vendors: vendor },
+          customerInfo.notification_method
+        );
+        toast.success('Order placed and confirmation sent!');
+      } catch (error) {
+        console.error('Failed to send customer notification:', error);
+        toast.success('Order placed successfully!');
+      }
+
       clearCart(vendorId);
-      toast.success('Order placed successfully!');
       router.push(`/order-confirmation/${vendorId}`);
     } catch (error) {
       console.error('Error placing order:', error);
@@ -354,6 +368,57 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
                   rows={3}
                   placeholder="Any special requests or notes for the vendor..."
                 />
+              </div>
+
+              {/* Notification Preferences */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-medium text-earth-800">📱 Order Updates</h3>
+                <p className="text-sm text-earth-600">How would you like to receive order status updates?</p>
+                
+                <div className="space-y-3">
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="notification_method"
+                      value="email"
+                      checked={customerInfo.notification_method === 'email'}
+                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, notification_method: e.target.value as 'email' | 'sms' | 'both' }))}
+                      className="h-4 w-4 text-market-600 focus:ring-market-500 border-earth-300"
+                    />
+                    <span className="text-sm text-earth-700">📧 Email only</span>
+                  </label>
+                  
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="notification_method"
+                      value="sms"
+                      checked={customerInfo.notification_method === 'sms'}
+                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, notification_method: e.target.value as 'email' | 'sms' | 'both' }))}
+                      className="h-4 w-4 text-market-600 focus:ring-market-500 border-earth-300"
+                    />
+                    <span className="text-sm text-earth-700">📱 Text message only</span>
+                  </label>
+                  
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="notification_method"
+                      value="both"
+                      checked={customerInfo.notification_method === 'both'}
+                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, notification_method: e.target.value as 'email' | 'sms' | 'both' }))}
+                      className="h-4 w-4 text-market-600 focus:ring-market-500 border-earth-300"
+                    />
+                    <span className="text-sm text-earth-700">📧📱 Both email and text</span>
+                  </label>
+                </div>
+                
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs text-blue-700">
+                    💡 We'll send you updates when your order is confirmed, ready for pickup, and completed. 
+                    You can also cancel your order directly from the notification email/text.
+                  </p>
+                </div>
               </div>
 
               {/* Payment Method Info */}

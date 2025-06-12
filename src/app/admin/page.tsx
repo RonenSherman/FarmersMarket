@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { vendorService, productService, marketDateService, orderService } from '@/lib/database';
 import CameraUpload from '@/components/CameraUpload';
 import { notificationService } from '@/lib/notifications';
+import { customerNotificationService } from '@/lib/customerNotifications';
 import type { Vendor, Product, MarketDate, Order, PricingUnit } from '@/types';
 import { PRICING_UNIT_LABELS } from '@/types';
 
@@ -283,9 +284,33 @@ export default function AdminPage() {
   };
 
   const handleUpdateOrderStatus = async (orderId: string, order_status: Order['order_status']) => {
+    // Confirmation for cancellation
+    if (order_status === 'cancelled') {
+      if (!confirm('Are you sure you want to cancel this order? The customer will be notified.')) {
+        return;
+      }
+    }
+
     try {
       await orderService.updateStatus(orderId, order_status);
-      toast.success('Order status updated successfully');
+      
+      // Find the updated order to send notification
+      const updatedOrder = state.orders.find(order => order.id === orderId);
+      if (updatedOrder && updatedOrder.notification_method) {
+        try {
+          await customerNotificationService.sendOrderStatusUpdate(
+            updatedOrder,
+            updatedOrder.notification_method
+          );
+          toast.success(`Order status updated and customer notified via ${updatedOrder.notification_method}`);
+        } catch (error) {
+          console.error('Failed to send customer notification:', error);
+          toast.success('Order status updated (notification failed)');
+        }
+      } else {
+        toast.success('Order status updated successfully');
+      }
+      
       loadAdminData();
     } catch (error) {
       console.error('Error updating order status:', error);
@@ -403,18 +428,66 @@ export default function AdminPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex flex-col space-y-2">
-                      <select
-                        value={order.order_status}
-                        onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value as Order['order_status'])}
-                        className="text-xs border border-earth-300 rounded px-2 py-1"
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="confirmed">Confirmed</option>
-                        <option value="ready">Ready</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                      </select>
+                    <div className="flex flex-col space-y-2 min-w-0">
+                      {/* Status Action Buttons */}
+                      <div className="flex flex-wrap gap-1">
+                        {order.order_status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleUpdateOrderStatus(order.id, 'confirmed')}
+                              className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 transition-colors"
+                              title="Confirm Order"
+                            >
+                              ✅ Confirm
+                            </button>
+                            <button
+                              onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
+                              className="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700 transition-colors"
+                              title="Cancel Order"
+                            >
+                              ❌ Cancel
+                            </button>
+                          </>
+                        )}
+                        {order.order_status === 'confirmed' && (
+                          <>
+                            <button
+                              onClick={() => handleUpdateOrderStatus(order.id, 'ready')}
+                              className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 transition-colors"
+                              title="Mark as Ready"
+                            >
+                              📦 Ready
+                            </button>
+                            <button
+                              onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
+                              className="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700 transition-colors"
+                              title="Cancel Order"
+                            >
+                              ❌ Cancel
+                            </button>
+                          </>
+                        )}
+                        {order.order_status === 'ready' && (
+                          <button
+                            onClick={() => handleUpdateOrderStatus(order.id, 'completed')}
+                            className="bg-purple-600 text-white px-2 py-1 rounded text-xs hover:bg-purple-700 transition-colors"
+                            title="Mark as Completed"
+                          >
+                            🎉 Complete
+                          </button>
+                        )}
+                        {(order.order_status === 'completed' || order.order_status === 'cancelled') && (
+                          <span className="text-xs text-earth-500 italic">Order finalized</span>
+                        )}
+                      </div>
+                      
+                      {/* Notification Method Display */}
+                      {order.notification_method && (
+                        <div className="text-xs text-earth-500">
+                          🔔 {order.notification_method === 'both' ? 'Email & SMS' : 
+                              order.notification_method === 'email' ? 'Email' : 'SMS'} notifications
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
