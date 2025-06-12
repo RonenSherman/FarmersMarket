@@ -45,27 +45,50 @@ class CustomerNotificationService {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   }
 
-  // Store cancellation token (in production, use database)
-  private storeCancellationToken(orderId: string, token: string): void {
-    if (typeof window !== 'undefined') {
-      const tokens = JSON.parse(localStorage.getItem('cancellation_tokens') || '{}');
-      tokens[orderId] = { token, created: Date.now() };
-      localStorage.setItem('cancellation_tokens', JSON.stringify(tokens));
+  // Store cancellation token (server-side)
+  private async storeCancellationToken(orderId: string, token: string): Promise<void> {
+    try {
+      const response = await fetch('/api/verify-cancellation-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'store',
+          orderId,
+          token
+        })
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to store cancellation token');
+      }
+    } catch (error) {
+      console.error('Error storing cancellation token:', error);
     }
   }
 
-  // Verify cancellation token
-  public verifyCancellationToken(orderId: string, token: string): boolean {
-    if (typeof window !== 'undefined') {
-      const tokens = JSON.parse(localStorage.getItem('cancellation_tokens') || '{}');
-      const storedData = tokens[orderId];
-      if (storedData && storedData.token === token) {
-        // Token expires after 24 hours
-        const isExpired = Date.now() - storedData.created > 24 * 60 * 60 * 1000;
-        return !isExpired;
+  // Verify cancellation token (server-side)
+  public async verifyCancellationToken(orderId: string, token: string): Promise<boolean> {
+    try {
+      const response = await fetch('/api/verify-cancellation-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'verify',
+          orderId,
+          token
+        })
+      });
+      
+      if (!response.ok) {
+        return false;
       }
+      
+      const result = await response.json();
+      return result.valid;
+    } catch (error) {
+      console.error('Error verifying cancellation token:', error);
+      return false;
     }
-    return false;
   }
 
   // Create email templates for different order statuses
@@ -229,7 +252,7 @@ class CustomerNotificationService {
     const cancellationToken = includeCancellation ? this.generateCancellationToken() : undefined;
     
     if (cancellationToken) {
-      this.storeCancellationToken(order.id, cancellationToken);
+      await this.storeCancellationToken(order.id, cancellationToken);
     }
 
     const items = order.items.map(item => 

@@ -34,7 +34,7 @@ export default function CancelOrderPage() {
 
     try {
       // Validate token
-      const isValid = customerNotificationService.verifyCancellationToken(orderId, token);
+      const isValid = await customerNotificationService.verifyCancellationToken(orderId, token);
       if (!isValid) {
         toast.error('Invalid or expired cancellation link');
         setLoading(false);
@@ -89,10 +89,20 @@ export default function CancelOrderPage() {
       if (order.notification_method) {
         try {
           const updatedOrder = { ...order, order_status: 'cancelled' as const };
-          await customerNotificationService.sendOrderStatusUpdate(
-            updatedOrder,
-            order.notification_method
-          );
+          
+          const notificationResponse = await fetch('/api/send-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              order: updatedOrder,
+              notificationMethod: order.notification_method,
+              type: 'status_update'
+            })
+          });
+          
+          if (!notificationResponse.ok) {
+            console.error('Failed to send cancellation notification');
+          }
         } catch (error) {
           console.error('Failed to send cancellation notification:', error);
         }

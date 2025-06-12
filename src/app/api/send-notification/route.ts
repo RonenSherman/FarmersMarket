@@ -5,12 +5,13 @@ import type { Order, Vendor } from '@/types';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { order, notificationMethod, type = 'confirmation' } = body;
+    const { order, notificationMethod, type = 'confirmation', includeCancellation = false } = body;
 
     console.log('📧 API ROUTE - Sending notification');
     console.log('📧 Type:', type);
     console.log('📧 Order ID:', order.id);
     console.log('📧 Customer email:', order.customer_email);
+    console.log('📧 Include cancellation:', includeCancellation);
     console.log('📧 SendGrid API Key exists:', !!process.env.SENDGRID_API_KEY);
     console.log('📧 From email:', process.env.SENDGRID_FROM_EMAIL);
 
@@ -18,9 +19,10 @@ export async function POST(request: NextRequest) {
     let success = false;
     
     if (type === 'confirmation') {
-      success = await customerNotificationService.sendOrderConfirmation(
+      success = await customerNotificationService.sendOrderNotification(
         order,
-        notificationMethod
+        notificationMethod,
+        includeCancellation
       );
     } else if (type === 'status_update') {
       success = await customerNotificationService.sendOrderStatusUpdate(

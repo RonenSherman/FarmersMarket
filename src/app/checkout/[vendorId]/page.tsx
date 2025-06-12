@@ -125,7 +125,8 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
           body: JSON.stringify({
             order: orderWithVendor,
             notificationMethod: customerInfo.notification_method,
-            includeCancellation: false
+            type: 'confirmation',
+            includeCancellation: true
           })
         });
         
