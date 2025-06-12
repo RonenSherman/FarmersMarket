@@ -92,8 +92,8 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
         order_status: 'pending',
         order_date: new Date().toISOString().split('T')[0],
         order_number: orderNumber,
-        special_instructions: deliveryInfo,
-        notification_method: customerInfo.notification_method
+        special_instructions: deliveryInfo
+        // notification_method: customerInfo.notification_method // Temporarily commented until DB updated
       });
 
       // Send admin notification
@@ -106,11 +106,18 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
 
       // Send customer confirmation email/SMS
       try {
+        console.log('🔔 Attempting to send notification via:', customerInfo.notification_method);
         await customerNotificationService.sendOrderConfirmation(
           { ...newOrder, vendors: vendor },
           customerInfo.notification_method
         );
-        toast.success('Order placed and confirmation sent!');
+        
+        // Different success messages based on environment
+        if (process.env.SENDGRID_API_KEY || process.env.TWILIO_ACCOUNT_SID) {
+          toast.success(`Order placed and confirmation sent via ${customerInfo.notification_method}!`);
+        } else {
+          toast.success('Order placed! (Check console for notification details - add API keys for real notifications)');
+        }
       } catch (error) {
         console.error('Failed to send customer notification:', error);
         toast.success('Order placed successfully!');

@@ -298,17 +298,44 @@ export default function AdminPage() {
       const updatedOrder = state.orders.find(order => order.id === orderId);
       if (updatedOrder && updatedOrder.notification_method) {
         try {
+          console.log('🔔 Admin sending notification via:', updatedOrder.notification_method);
           await customerNotificationService.sendOrderStatusUpdate(
             updatedOrder,
             updatedOrder.notification_method
           );
-          toast.success(`Order status updated and customer notified via ${updatedOrder.notification_method}`);
+          
+          // Different messages based on environment
+          if (process.env.SENDGRID_API_KEY || process.env.TWILIO_ACCOUNT_SID) {
+            toast.success(`Order status updated and customer notified via ${updatedOrder.notification_method}`);
+          } else {
+            toast.success(`Order status updated! (Notification simulated via ${updatedOrder.notification_method} - check console)`);
+          }
         } catch (error) {
           console.error('Failed to send customer notification:', error);
           toast.success('Order status updated (notification failed)');
         }
       } else {
-        toast.success('Order status updated successfully');
+        // Fallback to email notification if notification_method not set
+        if (updatedOrder) {
+          try {
+            console.log('🔔 Admin sending fallback email notification');
+            await customerNotificationService.sendOrderStatusUpdate(
+              updatedOrder,
+              'email' // Default to email
+            );
+            
+            if (process.env.SENDGRID_API_KEY) {
+              toast.success('Order status updated and customer notified via email');
+            } else {
+              toast.success('Order status updated! (Email notification simulated - check console)');
+            }
+          } catch (error) {
+            console.error('Failed to send customer notification:', error);
+            toast.success('Order status updated successfully');
+          }
+        } else {
+          toast.success('Order status updated successfully');
+        }
       }
       
       loadAdminData();
@@ -430,22 +457,22 @@ export default function AdminPage() {
                     </div>
                     <div className="flex flex-col space-y-2 min-w-0">
                       {/* Status Action Buttons */}
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-col gap-2">
                         {order.order_status === 'pending' && (
                           <>
                             <button
                               onClick={() => handleUpdateOrderStatus(order.id, 'confirmed')}
-                              className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 transition-colors"
+                              className="bg-blue-600 text-white px-3 py-2 rounded text-xs hover:bg-blue-700 transition-colors font-medium"
                               title="Confirm Order"
                             >
-                              ✅ Confirm
+                              ✅ Confirm Order
                             </button>
                             <button
                               onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
-                              className="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700 transition-colors"
-                              title="Cancel Order"
+                              className="bg-red-600 text-white px-3 py-2 rounded text-xs hover:bg-red-700 transition-colors font-medium border-2 border-red-700"
+                              title="Cancel Order - This will notify the customer"
                             >
-                              ❌ Cancel
+                              ❌ Cancel Order
                             </button>
                           </>
                         )}
@@ -453,27 +480,27 @@ export default function AdminPage() {
                           <>
                             <button
                               onClick={() => handleUpdateOrderStatus(order.id, 'ready')}
-                              className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 transition-colors"
-                              title="Mark as Ready"
+                              className="bg-green-600 text-white px-3 py-2 rounded text-xs hover:bg-green-700 transition-colors font-medium"
+                              title="Mark as Ready for Pickup"
                             >
-                              📦 Ready
+                              📦 Mark Ready
                             </button>
                             <button
                               onClick={() => handleUpdateOrderStatus(order.id, 'cancelled')}
-                              className="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700 transition-colors"
-                              title="Cancel Order"
+                              className="bg-red-600 text-white px-3 py-2 rounded text-xs hover:bg-red-700 transition-colors font-medium border-2 border-red-700"
+                              title="Cancel Order - This will notify the customer"
                             >
-                              ❌ Cancel
+                              ❌ Cancel Order
                             </button>
                           </>
                         )}
                         {order.order_status === 'ready' && (
                           <button
                             onClick={() => handleUpdateOrderStatus(order.id, 'completed')}
-                            className="bg-purple-600 text-white px-2 py-1 rounded text-xs hover:bg-purple-700 transition-colors"
+                            className="bg-purple-600 text-white px-3 py-2 rounded text-xs hover:bg-purple-700 transition-colors font-medium"
                             title="Mark as Completed"
                           >
-                            🎉 Complete
+                            🎉 Complete Order
                           </button>
                         )}
                         {(order.order_status === 'completed' || order.order_status === 'cancelled') && (

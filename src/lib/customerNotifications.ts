@@ -164,7 +164,9 @@ class CustomerNotificationService {
   // Send email notification
   private async sendEmail(data: CustomerNotificationData): Promise<boolean> {
     if (!this.apiKey) {
-      console.log('📧 SendGrid not configured, logging email:', data);
+      console.log('📧 SendGrid API key not configured. Email would be sent to:', data.customerEmail);
+      console.log('📧 Email subject:', this.createEmailTemplate(data).subject);
+      console.log('📧 Set SENDGRID_API_KEY environment variable to enable real emails');
       return true; // Return true for demo purposes
     }
 
@@ -202,9 +204,15 @@ class CustomerNotificationService {
 
   // Send SMS notification
   private async sendSMS(data: CustomerNotificationData): Promise<boolean> {
-    if (!this.twilioSid || !this.twilioToken || !data.customerPhone) {
-      console.log('📱 Twilio not configured or no phone number, logging SMS:', data);
+    if (!this.twilioSid || !this.twilioToken) {
+      console.log('📱 Twilio credentials not configured. SMS would be sent to:', data.customerPhone);
+      console.log('📱 Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables to enable real SMS');
       return true; // Return true for demo purposes
+    }
+    
+    if (!data.customerPhone) {
+      console.log('📱 No phone number provided for SMS notification');
+      return false;
     }
 
     try {
