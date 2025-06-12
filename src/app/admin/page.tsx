@@ -298,17 +298,17 @@ export default function AdminPage() {
       const updatedOrder = state.orders.find(order => order.id === orderId);
       if (updatedOrder && updatedOrder.notification_method) {
         try {
-          console.log('🔔 Admin sending notification via:', updatedOrder.notification_method);
+          console.log('📧 Admin sending email notification to:', updatedOrder.customer_email);
           await customerNotificationService.sendOrderStatusUpdate(
             updatedOrder,
             updatedOrder.notification_method
           );
           
           // Different messages based on environment
-          if (process.env.SENDGRID_API_KEY || process.env.TWILIO_ACCOUNT_SID) {
-            toast.success(`Order status updated and customer notified via ${updatedOrder.notification_method}`);
+          if (process.env.SENDGRID_API_KEY) {
+            toast.success('Order status updated and customer notified via email');
           } else {
-            toast.success(`Order status updated! (Notification simulated via ${updatedOrder.notification_method} - check console)`);
+            toast.success('Order status updated! (Email notification simulated - check console)');
           }
         } catch (error) {
           console.error('Failed to send customer notification:', error);
@@ -318,7 +318,7 @@ export default function AdminPage() {
         // Fallback to email notification if notification_method not set
         if (updatedOrder) {
           try {
-            console.log('🔔 Admin sending fallback email notification');
+            console.log('📧 Admin sending email notification to:', updatedOrder.customer_email);
             await customerNotificationService.sendOrderStatusUpdate(
               updatedOrder,
               'email' // Default to email
@@ -509,12 +509,9 @@ export default function AdminPage() {
                       </div>
                       
                       {/* Notification Method Display */}
-                      {order.notification_method && (
-                        <div className="text-xs text-earth-500">
-                          🔔 {order.notification_method === 'both' ? 'Email & SMS' : 
-                              order.notification_method === 'email' ? 'Email' : 'SMS'} notifications
-                        </div>
-                      )}
+                      <div className="text-xs text-earth-500">
+                        📧 Email notifications enabled
+                      </div>
                     </div>
                   </div>
                 </div>

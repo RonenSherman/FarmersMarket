@@ -32,7 +32,7 @@ export default function VendorCheckoutPage() {
       delivery_instructions: ''
     },
     special_instructions: '',
-    notification_method: 'email' as 'email' | 'sms' | 'both'
+    notification_method: 'email' as 'email'
   });
 
   const { carts, clearCart } = useMarketStore();
@@ -106,17 +106,17 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
 
       // Send customer confirmation email/SMS
       try {
-        console.log('🔔 Attempting to send notification via:', customerInfo.notification_method);
+        console.log('📧 Sending email confirmation to:', customerInfo.email);
         await customerNotificationService.sendOrderConfirmation(
           { ...newOrder, vendors: vendor },
           customerInfo.notification_method
         );
         
         // Different success messages based on environment
-        if (process.env.SENDGRID_API_KEY || process.env.TWILIO_ACCOUNT_SID) {
-          toast.success(`Order placed and confirmation sent via ${customerInfo.notification_method}!`);
+        if (process.env.SENDGRID_API_KEY) {
+          toast.success('Order placed and confirmation email sent!');
         } else {
-          toast.success('Order placed! (Check console for notification details - add API keys for real notifications)');
+          toast.success('Order placed! (Check console for email notification details)');
         }
       } catch (error) {
         console.error('Failed to send customer notification:', error);
@@ -252,7 +252,7 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
 
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-earth-700 mb-2">
-                  Phone Number *
+                  Phone Number (optional)
                 </label>
                 <input
                   type="tel"
@@ -260,7 +260,7 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
                   value={customerInfo.phone}
                   onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
                   className="input-field"
-                  required
+                  placeholder="For vendor contact purposes only"
                 />
               </div>
 
@@ -377,55 +377,13 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
                 />
               </div>
 
-              {/* Notification Preferences */}
-              <div className="space-y-3">
-                <h3 className="text-lg font-medium text-earth-800">📱 Order Updates</h3>
-                <p className="text-sm text-earth-600">How would you like to receive order status updates?</p>
-                
-                <div className="space-y-3">
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="notification_method"
-                      value="email"
-                      checked={customerInfo.notification_method === 'email'}
-                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, notification_method: e.target.value as 'email' | 'sms' | 'both' }))}
-                      className="h-4 w-4 text-market-600 focus:ring-market-500 border-earth-300"
-                    />
-                    <span className="text-sm text-earth-700">📧 Email only</span>
-                  </label>
-                  
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="notification_method"
-                      value="sms"
-                      checked={customerInfo.notification_method === 'sms'}
-                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, notification_method: e.target.value as 'email' | 'sms' | 'both' }))}
-                      className="h-4 w-4 text-market-600 focus:ring-market-500 border-earth-300"
-                    />
-                    <span className="text-sm text-earth-700">📱 Text message only</span>
-                  </label>
-                  
-                  <label className="flex items-center space-x-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="notification_method"
-                      value="both"
-                      checked={customerInfo.notification_method === 'both'}
-                      onChange={(e) => setCustomerInfo(prev => ({ ...prev, notification_method: e.target.value as 'email' | 'sms' | 'both' }))}
-                      className="h-4 w-4 text-market-600 focus:ring-market-500 border-earth-300"
-                    />
-                    <span className="text-sm text-earth-700">📧📱 Both email and text</span>
-                  </label>
-                </div>
-                
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-xs text-blue-700">
-                    💡 We'll send you updates when your order is confirmed, ready for pickup, and completed. 
-                    You can also cancel your order directly from the notification email/text.
-                  </p>
-                </div>
+              {/* Email Notifications Info */}
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 className="text-lg font-medium text-earth-800 mb-2">📧 Email Updates</h3>
+                <p className="text-sm text-blue-700">
+                  We'll send you email updates when your order is confirmed, ready for pickup, and completed. 
+                  You can also cancel your order directly from the notification email.
+                </p>
               </div>
 
               {/* Payment Method Info */}

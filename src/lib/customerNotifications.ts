@@ -4,7 +4,7 @@
 
 import type { Order, Vendor } from '@/types';
 
-export type NotificationMethod = 'email' | 'sms' | 'both';
+export type NotificationMethod = 'email';
 export type OrderStatusType = Order['order_status'];
 
 interface CustomerNotificationData {
@@ -253,7 +253,7 @@ ${data.cancellationToken ? `Cancel: ${this.baseUrl}/cancel-order/${data.orderId}
     }
   }
 
-  // Main method to send notifications
+  // Main method to send notifications (email only)
   async sendOrderNotification(
     order: Order & { vendors: Vendor },
     notificationMethod: NotificationMethod,
@@ -283,18 +283,8 @@ ${data.cancellationToken ? `Cancel: ${this.baseUrl}/cancel-order/${data.orderId}
       cancellationToken
     };
 
-    let emailSuccess = true;
-    let smsSuccess = true;
-
-    if (notificationMethod === 'email' || notificationMethod === 'both') {
-      emailSuccess = await this.sendEmail(data);
-    }
-
-    if ((notificationMethod === 'sms' || notificationMethod === 'both') && data.customerPhone) {
-      smsSuccess = await this.sendSMS(data);
-    }
-
-    return emailSuccess && smsSuccess;
+    // Only send email notifications
+    return await this.sendEmail(data);
   }
 
   // Send order confirmation (with cancellation option)

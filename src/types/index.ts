@@ -129,7 +129,7 @@ export interface Order {
   order_date: string;
   order_number: string;
   special_instructions?: string;
-  notification_method?: 'email' | 'sms' | 'both';
+  notification_method?: 'email';
   created_at: string;
   updated_at: string;
 }

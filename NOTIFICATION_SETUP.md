@@ -1,8 +1,8 @@
-# 📧📱 Notification Setup Guide
+# 📧 Email Notification Setup Guide
 
-## 🚀 Quick Setup for Real Notifications
+## 🚀 Quick Setup for Real Email Notifications
 
-Currently, notifications are **simulated** and logged to the browser console. To enable real email and SMS notifications, follow these steps:
+Currently, email notifications are **simulated** and logged to the browser console. To enable real email notifications, follow these steps:
 
 ### 📧 **Email Notifications (SendGrid)**
 
@@ -15,58 +15,63 @@ Currently, notifications are **simulated** and logged to the browser console. To
    SENDGRID_API_KEY=your_sendgrid_api_key_here
    ```
 
-### 📱 **SMS Notifications (Twilio)**
+### 💰 **Cost-Effective Solution**
 
-1. **Sign up for Twilio**: https://twilio.com/
-2. **Get your credentials**:
-   - Account SID and Auth Token from dashboard
-   - Purchase a phone number from Twilio
-3. **Add to environment**:
-   ```env
-   TWILIO_ACCOUNT_SID=your_account_sid_here
-   TWILIO_AUTH_TOKEN=your_auth_token_here
-   TWILIO_PHONE_NUMBER=+1234567890
-   ```
+We've removed SMS notifications to keep costs down. Email notifications are:
+- ✅ **Free** with SendGrid's free tier (100 emails/day)
+- ✅ **Professional** with branded HTML templates
+- ✅ **Reliable** delivery to customer inboxes
+- ✅ **Interactive** with order cancellation links
 
 ### 🛠️ **Current Status (Demo Mode)**
 
 ✅ **Working Features:**
-- Order placement with notification preferences
+- Order placement with automatic email notifications
 - Admin status updates with action buttons  
 - Customer cancellation page (tokens work)
-- Complete notification flow simulation
+- Complete email notification flow simulation
 
 📋 **What You'll See:**
-- Console logs showing notification details
+- Console logs showing email content and delivery status
 - Toast messages indicating simulation mode
-- All notification content is generated and ready
+- Professional HTML email templates generated and ready
 
-🔄 **When APIs are configured:**
+🔄 **When SendGrid API is configured:**
 - Real emails will be sent to customers
-- Real SMS messages will be sent to phones
-- Professional branded communications
-- Secure cancellation links will work via email/SMS
+- Professional branded email communications
+- Secure cancellation links will work via email
+- Order status updates delivered to customer inbox
 
 ---
 
 ## 🧪 **Testing Without APIs**
 
 **Current Demo Features:**
-1. ✅ Place orders with notification preferences
+1. ✅ Place orders with automatic email notification setup
 2. ✅ Admin panel shows improved action buttons
-3. ✅ Console shows email templates and SMS content
-4. ✅ Status changes simulate customer notifications
-5. ✅ Cancellation tokens are generated (but links won't be sent)
+3. ✅ Console shows complete email templates and content
+4. ✅ Status changes simulate customer email notifications
+5. ✅ Cancellation tokens are generated and ready
 
-**Check Browser Console:** All notification details are logged for testing!
+**Check Browser Console:** All email notification details are logged for testing!
 
 ---
 
 ## 💡 **Tips for Demo**
 
-1. **Open Browser Console** to see notification details
-2. **Place test orders** with different notification preferences
+1. **Open Browser Console** to see email notification details
+2. **Place test orders** to see email confirmation simulation
 3. **Use admin panel** to change order status
-4. **Check console logs** to see what would be sent to customers
+4. **Check console logs** to see email content that would be sent to customers
 
-The system is **fully functional** - just add API keys when ready for production! 
+The system is **fully functional** - just add SendGrid API key when ready for production!
+
+---
+
+## 📧 **Sample Email Content**
+
+When you test, you'll see beautiful HTML email templates with:
+- Professional Duvall Farmers Market branding
+- Order details and status updates
+- Secure cancellation links
+- Mobile-responsive design 
