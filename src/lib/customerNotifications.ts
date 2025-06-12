@@ -163,15 +163,19 @@ class CustomerNotificationService {
 
   // Send email notification
   private async sendEmail(data: CustomerNotificationData): Promise<boolean> {
+    const template = this.createEmailTemplate(data);
+    
     if (!this.apiKey) {
-      console.log('📧 SendGrid API key not configured. Email would be sent to:', data.customerEmail);
-      console.log('📧 Email subject:', this.createEmailTemplate(data).subject);
-      console.log('📧 Set SENDGRID_API_KEY environment variable to enable real emails');
+      console.log('📧 EMAIL SIMULATION - SendGrid API key not configured');
+      console.log('📧 Would send to:', data.customerEmail);
+      console.log('📧 Subject:', template.subject);
+      console.log('📧 HTML content preview:', template.html.substring(0, 200) + '...');
+      console.log('📧 To enable real emails, set SENDGRID_API_KEY environment variable');
       return true; // Return true for demo purposes
     }
 
     try {
-      const template = this.createEmailTemplate(data);
+      console.log('📧 SENDING REAL EMAIL via SendGrid to:', data.customerEmail);
       
       const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
         method: 'POST',

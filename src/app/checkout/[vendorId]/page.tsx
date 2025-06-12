@@ -92,8 +92,8 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
         order_status: 'pending',
         order_date: new Date().toISOString().split('T')[0],
         order_number: orderNumber,
-        special_instructions: deliveryInfo
-        // notification_method: customerInfo.notification_method // Temporarily commented until DB updated
+        special_instructions: deliveryInfo,
+        notification_method: customerInfo.notification_method
       });
 
       // Send admin notification
@@ -104,11 +104,22 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
         total: vendorCart.total
       });
 
-      // Send customer confirmation email/SMS
+      // Send customer confirmation email
       try {
-        console.log('📧 Sending email confirmation to:', customerInfo.email);
+        console.log('📧 ORDER PLACED - Preparing to send confirmation email');
+        console.log('📧 Customer email:', customerInfo.email);
+        console.log('📧 Order number:', orderNumber);
+        console.log('📧 Notification method:', customerInfo.notification_method);
+        
+        const orderWithVendor = { ...newOrder, vendors: vendor };
+        console.log('📧 Order data prepared:', {
+          id: orderWithVendor.id,
+          customer_email: orderWithVendor.customer_email,
+          order_number: orderWithVendor.order_number
+        });
+        
         await customerNotificationService.sendOrderConfirmation(
-          { ...newOrder, vendors: vendor },
+          orderWithVendor,
           customerInfo.notification_method
         );
         
