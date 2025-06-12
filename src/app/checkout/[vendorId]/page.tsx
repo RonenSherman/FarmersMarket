@@ -118,13 +118,20 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
           order_number: orderWithVendor.order_number
         });
         
-        await customerNotificationService.sendOrderConfirmation(
-          orderWithVendor,
-          customerInfo.notification_method
-        );
+        // Send notification via API route (server-side)
+        const notificationResponse = await fetch('/api/send-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order: orderWithVendor,
+            notificationMethod: customerInfo.notification_method,
+            includeCancellation: false
+          })
+        });
         
-        // Different success messages based on environment
-        if (process.env.SENDGRID_API_KEY) {
+        const notificationResult = await notificationResponse.json();
+        
+        if (notificationResult.success) {
           toast.success('Order placed and confirmation email sent!');
         } else {
           toast.success('Order placed! (Check console for email notification details)');

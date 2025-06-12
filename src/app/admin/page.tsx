@@ -299,13 +299,20 @@ export default function AdminPage() {
       if (updatedOrder && updatedOrder.notification_method) {
         try {
           console.log('📧 Admin sending email notification to:', updatedOrder.customer_email);
-          await customerNotificationService.sendOrderStatusUpdate(
-            updatedOrder,
-            updatedOrder.notification_method
-          );
           
-          // Different messages based on environment
-          if (process.env.SENDGRID_API_KEY) {
+          const notificationResponse = await fetch('/api/send-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              order: updatedOrder,
+              notificationMethod: updatedOrder.notification_method,
+              type: 'status_update'
+            })
+          });
+          
+          const notificationResult = await notificationResponse.json();
+          
+          if (notificationResult.success) {
             toast.success('Order status updated and customer notified via email');
           } else {
             toast.success('Order status updated! (Email notification simulated - check console)');
@@ -319,12 +326,20 @@ export default function AdminPage() {
         if (updatedOrder) {
           try {
             console.log('📧 Admin sending email notification to:', updatedOrder.customer_email);
-            await customerNotificationService.sendOrderStatusUpdate(
-              updatedOrder,
-              'email' // Default to email
-            );
             
-            if (process.env.SENDGRID_API_KEY) {
+            const notificationResponse = await fetch('/api/send-notification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                order: updatedOrder,
+                notificationMethod: 'email', // Default to email
+                type: 'status_update'
+              })
+            });
+            
+            const notificationResult = await notificationResponse.json();
+            
+            if (notificationResult.success) {
               toast.success('Order status updated and customer notified via email');
             } else {
               toast.success('Order status updated! (Email notification simulated - check console)');

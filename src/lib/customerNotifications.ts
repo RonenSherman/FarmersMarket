@@ -30,9 +30,7 @@ interface EmailTemplate {
 class CustomerNotificationService {
   private static instance: CustomerNotificationService;
   private apiKey: string = process.env.SENDGRID_API_KEY || '';
-  private twilioSid: string = process.env.TWILIO_ACCOUNT_SID || '';
-  private twilioToken: string = process.env.TWILIO_AUTH_TOKEN || '';
-  private twilioPhone: string = process.env.TWILIO_PHONE_NUMBER || '';
+  private fromEmail: string = process.env.SENDGRID_FROM_EMAIL || 'orders@duvallfarmersmarket.org';
   private baseUrl: string = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
   static getInstance(): CustomerNotificationService {
@@ -174,8 +172,28 @@ class CustomerNotificationService {
       return true; // Return true for demo purposes
     }
 
-    try {
-      console.log('📧 SENDING REAL EMAIL via SendGrid to:', data.customerEmail);
+        try {
+      console.log('📧 SENDING REAL EMAIL via SendGrid');
+      console.log('📧 To:', data.customerEmail);
+      console.log('📧 From:', this.fromEmail);
+      console.log('📧 Subject:', template.subject);
+      
+      const emailPayload = {
+        personalizations: [{
+          to: [{ email: data.customerEmail, name: data.customerName }],
+          subject: template.subject
+        }],
+        from: {
+          email: this.fromEmail,
+          name: 'Duvall Farmers Market'
+        },
+        content: [
+          { type: 'text/plain', value: template.text },
+          { type: 'text/html', value: template.html }
+        ]
+      };
+      
+      console.log('📧 Email payload prepared');
       
       const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
         method: 'POST',
@@ -183,79 +201,24 @@ class CustomerNotificationService {
           'Authorization': `Bearer ${this.apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          personalizations: [{
-            to: [{ email: data.customerEmail, name: data.customerName }],
-            subject: template.subject
-          }],
-          from: {
-            email: 'orders@duvallfarmersmarket.org',
-            name: 'Duvall Farmers Market'
-          },
-          content: [
-            { type: 'text/plain', value: template.text },
-            { type: 'text/html', value: template.html }
-          ]
-        })
+        body: JSON.stringify(emailPayload)
       });
 
-      return response.ok;
+      if (response.ok) {
+        console.log('✅ Email sent successfully via SendGrid!');
+        return true;
+      } else {
+        const errorText = await response.text();
+        console.error('❌ SendGrid API error:', response.status, errorText);
+        return false;
+      }
     } catch (error) {
-      console.error('Failed to send email:', error);
+      console.error('❌ Failed to send email:', error);
       return false;
     }
   }
 
-  // Send SMS notification
-  private async sendSMS(data: CustomerNotificationData): Promise<boolean> {
-    if (!this.twilioSid || !this.twilioToken) {
-      console.log('📱 Twilio credentials not configured. SMS would be sent to:', data.customerPhone);
-      console.log('📱 Set TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables to enable real SMS');
-      return true; // Return true for demo purposes
-    }
-    
-    if (!data.customerPhone) {
-      console.log('📱 No phone number provided for SMS notification');
-      return false;
-    }
 
-    try {
-      const statusEmojis = {
-        'pending': '⏳',
-        'confirmed': '✅',
-        'ready': '📦',
-        'completed': '🎉',
-        'cancelled': '❌'
-      };
-
-      const message = `${statusEmojis[data.status]} Duvall Farmers Market
-
-Order #${data.orderNumber} - ${data.status.toUpperCase()}
-${data.vendorName} - $${data.total.toFixed(2)}
-
-${data.status === 'ready' ? 'Ready for pickup!' : `Status: ${data.status}`}
-
-${data.cancellationToken ? `Cancel: ${this.baseUrl}/cancel-order/${data.orderId}?token=${data.cancellationToken}` : ''}`;
-
-      const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${this.twilioSid}/Messages.json`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${Buffer.from(`${this.twilioSid}:${this.twilioToken}`).toString('base64')}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          From: this.twilioPhone,
-          To: data.customerPhone,
-          Body: message
-        })
-      });
-
-      return response.ok;
-    } catch (error) {
-      console.error('Failed to send SMS:', error);
-      return false;
-    }
-  }
 
   // Main method to send notifications (email only)
   async sendOrderNotification(
