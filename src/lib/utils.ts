@@ -30,6 +30,26 @@ export function isMarketOpen(): boolean {
   return isBefore(now, marketEndTime);
 }
 
+export function isMarketOpenWithTimes(startTime: string, endTime: string): boolean {
+  const now = new Date();
+  
+  if (!isThursday(now)) {
+    return false;
+  }
+  
+  // Parse the time strings (format: "HH:MM" or "HH:MM:SS")
+  const [startHour, startMinute] = startTime.split(':').map(Number);
+  const [endHour, endMinute] = endTime.split(':').map(Number);
+  
+  const marketStartTime = new Date();
+  marketStartTime.setHours(startHour, startMinute, 0, 0);
+  
+  const marketEndTime = new Date();
+  marketEndTime.setHours(endHour, endMinute, 0, 0);
+  
+  return isAfter(now, marketStartTime) && isBefore(now, marketEndTime);
+}
+
 export function formatMarketDate(date: Date): string {
   return format(date, 'EEEE, MMMM do');
 }

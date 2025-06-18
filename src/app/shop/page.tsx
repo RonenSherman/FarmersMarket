@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
-import { vendorService, productService } from '@/lib/database';
+import { vendorService, productService, marketDateService } from '@/lib/database';
 import { useMarketStore } from '@/store/marketStore';
 import { MinusIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import type { Vendor, Product, VendorCart, PricingUnit } from '@/types';
+import type { Vendor, Product, VendorCart, PricingUnit, MarketDate } from '@/types';
 import { PRICING_UNIT_LABELS } from '@/types';
-import { isMarketOpen, getNextMarketDate, formatMarketDate } from '@/lib/utils';
+import { isMarketOpen, getNextMarketDate, formatMarketDate, isMarketOpenWithTimes } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 
 export default function ShopPage() {
@@ -17,6 +17,7 @@ export default function ShopPage() {
   const [selectedVendor, setSelectedVendor] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [marketOpen, setMarketOpen] = useState(true);
+  const [todayMarket, setTodayMarket] = useState<MarketDate | null>(null);
   const router = useRouter();
 
   const { addToCart, carts, products, setProducts, getAvailableStock, removeFromCart, updateCartQuantity } = useMarketStore();
@@ -35,17 +36,58 @@ export default function ShopPage() {
   ];
 
   useEffect(() => {
-    const open = isMarketOpen();
-    setMarketOpen(open);
-    if (!open) {
-      toast.error('The market is currently closed. Redirecting to calendar...');
-      setTimeout(() => {
-        router.replace('/calendar');
-      }, 3500);
-    } else {
-      loadShopData();
-    }
+    checkMarketStatus();
   }, []);
+
+  const checkMarketStatus = async () => {
+    try {
+      // Get today's market date from database
+      const todayMarketDate = await marketDateService.getToday();
+      setTodayMarket(todayMarketDate);
+
+      if (todayMarketDate && todayMarketDate.is_active && todayMarketDate.weather_status === 'scheduled') {
+        // Use the actual market times from the database
+        const open = isMarketOpenWithTimes(todayMarketDate.start_time, todayMarketDate.end_time);
+        setMarketOpen(open);
+        
+        if (!open) {
+          toast.error('The market is currently closed. Redirecting to calendar...');
+          setTimeout(() => {
+            router.replace('/calendar');
+          }, 3500);
+        } else {
+          loadShopData();
+        }
+      } else {
+        // Fallback to the default logic if no market date found
+        const open = isMarketOpen();
+        setMarketOpen(open);
+        
+        if (!open) {
+          toast.error('The market is currently closed. Redirecting to calendar...');
+          setTimeout(() => {
+            router.replace('/calendar');
+          }, 3500);
+        } else {
+          loadShopData();
+        }
+      }
+    } catch (error) {
+      console.error('Error checking market status:', error);
+      // Fallback to default logic
+      const open = isMarketOpen();
+      setMarketOpen(open);
+      
+      if (!open) {
+        toast.error('The market is currently closed. Redirecting to calendar...');
+        setTimeout(() => {
+          router.replace('/calendar');
+        }, 3500);
+      } else {
+        loadShopData();
+      }
+    }
+  };
 
   const loadShopData = async () => {
     try {

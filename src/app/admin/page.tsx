@@ -60,6 +60,8 @@ export default function AdminPage() {
 
   const [newDateForm, setNewDateForm] = useState({
     date: '',
+    start_time: '15:00',
+    end_time: '18:30',
     weather_status: 'scheduled' as const
   });
 
@@ -240,8 +242,8 @@ export default function AdminPage() {
       await marketDateService.create({
         date: newDateForm.date,
         is_active: newDateForm.weather_status === 'scheduled',
-        start_time: '15:00:00', // 3:00 PM
-        end_time: '18:30:00',   // 6:30 PM
+        start_time: newDateForm.start_time,
+        end_time: newDateForm.end_time,
         weather_status: newDateForm.weather_status,
         is_special_event: false,
         notes: undefined
@@ -250,6 +252,8 @@ export default function AdminPage() {
       toast.success('Market date added successfully');
       setNewDateForm({
         date: '',
+        start_time: '15:00',
+        end_time: '18:30',
         weather_status: 'scheduled'
       });
       loadAdminData();
@@ -280,6 +284,17 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Error updating market date:', error);
       toast.error('Failed to update market date');
+    }
+  };
+
+  const handleUpdateMarketDateTimes = async (dateId: string, start_time: string, end_time: string) => {
+    try {
+      await marketDateService.update(dateId, { start_time, end_time });
+      toast.success('Market times updated successfully');
+      loadAdminData();
+    } catch (error) {
+      console.error('Error updating market times:', error);
+      toast.error('Failed to update market times');
     }
   };
 
@@ -894,7 +909,7 @@ export default function AdminPage() {
             {/* Add New Date Form */}
             <form onSubmit={handleAddMarketDate} className="mb-6 p-4 bg-earth-50 rounded-lg">
               <h3 className="font-semibold text-earth-800 mb-3">Add New Market Date</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-earth-700 mb-1">
                     Date
@@ -907,20 +922,44 @@ export default function AdminPage() {
                     required
                   />
                 </div>
-                                 <div>
-                   <label className="block text-sm font-medium text-earth-700 mb-1">
-                     Weather Status
-                   </label>
-                   <select
-                     value={newDateForm.weather_status}
-                     onChange={(e) => setNewDateForm(prev => ({ ...prev, weather_status: e.target.value as any }))}
-                     className="input-field"
-                   >
-                     <option value="scheduled">Scheduled</option>
-                     <option value="cancelled">Cancelled</option>
-                     <option value="delayed">Delayed</option>
-                   </select>
-                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    value={newDateForm.start_time}
+                    onChange={(e) => setNewDateForm(prev => ({ ...prev, start_time: e.target.value }))}
+                    className="input-field"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    End Time
+                  </label>
+                  <input
+                    type="time"
+                    value={newDateForm.end_time}
+                    onChange={(e) => setNewDateForm(prev => ({ ...prev, end_time: e.target.value }))}
+                    className="input-field"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Weather Status
+                  </label>
+                  <select
+                    value={newDateForm.weather_status}
+                    onChange={(e) => setNewDateForm(prev => ({ ...prev, weather_status: e.target.value as any }))}
+                    className="input-field"
+                  >
+                    <option value="scheduled">Scheduled</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="delayed">Delayed</option>
+                  </select>
+                </div>
               </div>
               <button
                 type="submit"
@@ -935,34 +974,56 @@ export default function AdminPage() {
               {state.marketDates
                 .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                 .map((date) => (
-                <div key={date.id} className="flex justify-between items-center p-3 border border-earth-200 rounded-lg">
-                  <div>
-                    <p className="font-medium text-earth-800">
-                      {new Date(date.date).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </p>
-                    <p className={`text-sm capitalize ${
-                      date.weather_status === 'scheduled' ? 'text-green-600' :
-                      date.weather_status === 'cancelled' ? 'text-red-600' :
-                      'text-yellow-600'
-                    }`}>
-                      {date.weather_status}
-                    </p>
+                <div key={date.id} className="p-3 border border-earth-200 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <div>
+                      <p className="font-medium text-earth-800">
+                        {new Date(date.date).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </p>
+                      <p className={`text-sm capitalize ${
+                        date.weather_status === 'scheduled' ? 'text-green-600' :
+                        date.weather_status === 'cancelled' ? 'text-red-600' :
+                        'text-yellow-600'
+                      }`}>
+                        {date.weather_status}
+                      </p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <select
+                        value={date.weather_status}
+                        onChange={(e) => handleUpdateMarketDate(date.id, e.target.value as any)}
+                        className="text-sm border border-earth-300 rounded px-2 py-1"
+                      >
+                        <option value="scheduled">Scheduled</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="delayed">Delayed</option>
+                      </select>
+                    </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <select
-                      value={date.weather_status}
-                      onChange={(e) => handleUpdateMarketDate(date.id, e.target.value as any)}
-                      className="text-sm border border-earth-300 rounded px-2 py-1"
-                    >
-                      <option value="scheduled">Scheduled</option>
-                      <option value="cancelled">Cancelled</option>
-                      <option value="delayed">Delayed</option>
-                    </select>
+                  <div className="flex items-center space-x-4 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <label className="text-earth-600">Start:</label>
+                      <input
+                        type="time"
+                        value={date.start_time}
+                        onChange={(e) => handleUpdateMarketDateTimes(date.id, e.target.value, date.end_time)}
+                        className="text-sm border border-earth-300 rounded px-2 py-1 w-24"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <label className="text-earth-600">End:</label>
+                      <input
+                        type="time"
+                        value={date.end_time}
+                        onChange={(e) => handleUpdateMarketDateTimes(date.id, date.start_time, e.target.value)}
+                        className="text-sm border border-earth-300 rounded px-2 py-1 w-24"
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
