@@ -21,6 +21,13 @@ export default function CalendarPage() {
       console.log('All dates from database:', allDates);
       console.log('Database dates length:', allDates.length);
       
+      // Log each date with its day of week
+      console.log('Individual dates from database:');
+      allDates.forEach((date, index) => {
+        const dateObj = new Date(date.date);
+        console.log(`Date ${index + 1}: ${date.date} (${dateObj.toDateString()}) - Day of week: ${dateObj.getDay()} (${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dateObj.getDay()]})`);
+      });
+      
       // Sort all dates chronologically (no filtering since all are future dates)
       const sortedDates = allDates.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -206,6 +213,12 @@ export default function CalendarPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {marketDates.map((date) => {
             const marketInfo = getMarketStatus(date);
+            const dateObj = new Date(date.date);
+            const formattedDay = format(dateObj, 'EEEE');
+            const dayOfWeek = dateObj.getDay();
+            const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            
+            console.log(`Displaying date: ${date.date}, Date object: ${dateObj.toISOString()}, Day of week: ${dayOfWeek} (${dayNames[dayOfWeek]}), Formatted: ${formattedDay}`);
             
             return (
               <div
