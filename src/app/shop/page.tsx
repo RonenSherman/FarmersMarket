@@ -43,11 +43,13 @@ export default function ShopPage() {
     try {
       // Get today's market date from database
       const todayMarketDate = await marketDateService.getToday();
+      console.log('Shop page - Today market date from DB:', todayMarketDate);
       setTodayMarket(todayMarketDate);
 
       if (todayMarketDate && todayMarketDate.is_active && todayMarketDate.weather_status === 'scheduled') {
         // Use the actual market times from the database
         const open = isMarketOpenWithTimes(todayMarketDate.start_time, todayMarketDate.end_time);
+        console.log('Shop page - Market open check:', open, 'Times:', todayMarketDate.start_time, '-', todayMarketDate.end_time);
         setMarketOpen(open);
         
         if (!open) {
@@ -61,6 +63,7 @@ export default function ShopPage() {
       } else {
         // Fallback to the default logic if no market date found
         const open = isMarketOpen();
+        console.log('Shop page - Using fallback logic, market open:', open);
         setMarketOpen(open);
         
         if (!open) {

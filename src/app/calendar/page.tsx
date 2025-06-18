@@ -18,6 +18,7 @@ export default function CalendarPage() {
     try {
       // Get all market dates from database
       const allDates = await marketDateService.getAll();
+      console.log('All dates from database:', allDates);
       
       // Filter to only future dates and sort them
       const today = startOfDay(new Date());
@@ -25,18 +26,23 @@ export default function CalendarPage() {
         .filter(date => new Date(date.date) >= today)
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-      // If no future dates in database, generate upcoming Thursdays
-      if (futureDates.length === 0) {
+      console.log('Future dates after filtering:', futureDates);
+
+      // Always use database dates if they exist, only fallback if database is empty
+      if (allDates.length > 0) {
+        setMarketDates(futureDates);
+        console.log('Using database dates:', futureDates.length, 'dates');
+      } else {
         const generatedDates = generateUpcomingThursdays();
         setMarketDates(generatedDates);
-      } else {
-        setMarketDates(futureDates);
+        console.log('Using generated dates:', generatedDates.length, 'dates');
       }
     } catch (error) {
       console.error('Error loading market dates:', error);
       // Fallback to generated dates if database fails
       const generatedDates = generateUpcomingThursdays();
       setMarketDates(generatedDates);
+      console.log('Using fallback generated dates due to error');
     } finally {
       setLoading(false);
     }
