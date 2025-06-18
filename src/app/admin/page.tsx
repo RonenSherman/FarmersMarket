@@ -972,6 +972,7 @@ export default function AdminPage() {
             {/* Existing Dates */}
             <div className="space-y-3 max-h-64 overflow-y-auto">
               {state.marketDates
+                .filter(date => new Date(date.date) >= new Date(new Date().toDateString()))
                 .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                 .map((date) => (
                 <div key={date.id} className="p-3 border border-earth-200 rounded-lg">

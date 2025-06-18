@@ -46,15 +46,14 @@ export default function CalendarPage() {
     const dates: MarketDate[] = [];
     const today = new Date();
     let currentDate = new Date(today);
-    
-    // Find next Thursday
-    const daysUntilThursday = (4 - currentDate.getDay() + 7) % 7;
+
+    // Find next Thursday (4 = Thursday)
+    let daysUntilThursday = (4 - currentDate.getDay() + 7) % 7;
     if (daysUntilThursday === 0 && currentDate.getHours() >= 18) {
-      currentDate.setDate(currentDate.getDate() + 7);
-    } else {
-      currentDate.setDate(currentDate.getDate() + daysUntilThursday);
+      daysUntilThursday = 7;
     }
-    
+    currentDate.setDate(currentDate.getDate() + daysUntilThursday);
+
     // Generate 12 upcoming Thursdays
     for (let i = 0; i < 12; i++) {
       const dateString = currentDate.toISOString().split('T')[0];
@@ -68,9 +67,9 @@ export default function CalendarPage() {
         is_special_event: false,
         created_at: new Date().toISOString()
       });
-      currentDate = addWeeks(currentDate, 1);
+      currentDate.setDate(currentDate.getDate() + 7);
     }
-    
+
     return dates;
   };
 
