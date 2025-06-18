@@ -46,7 +46,7 @@
   }
   
   .input-field {
-    @apply w-full px-3 py-2 border border-earth-300 rounded-md focus:outline-none focus:ring-2 focus:ring-market-500 focus:border-transparent;
+    @apply w-full px-3 py-2 border border-earth-300 rounded-md focus:outline-none focus:ring-2 focus:ring-market-500 focus:border-transparent text-earth-900 bg-white;
   }
   
   .line-clamp-1 {

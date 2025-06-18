@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { vendorService, productService } from '@/lib/database';
 import { useMarketStore } from '@/store/marketStore';
-import { MinusIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { MinusIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import type { Vendor, Product, VendorCart, PricingUnit } from '@/types';
 import { PRICING_UNIT_LABELS } from '@/types';
 
@@ -13,6 +13,7 @@ export default function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [selectedVendor, setSelectedVendor] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { addToCart, carts, products, setProducts, getAvailableStock, removeFromCart, updateCartQuantity } = useMarketStore();
 
@@ -53,7 +54,16 @@ export default function ShopPage() {
   const filteredProducts = products.filter(product => {
     const categoryMatch = selectedCategory === 'all' || product.category === selectedCategory;
     const vendorMatch = selectedVendor === 'all' || product.vendor_id === selectedVendor;
-    return categoryMatch && vendorMatch;
+    
+    // Search functionality
+    const searchLower = searchQuery.toLowerCase();
+    const vendor = vendors.find(v => v.id === product.vendor_id);
+    const searchMatch = searchQuery === '' || 
+      product.name.toLowerCase().includes(searchLower) ||
+      (product.description && product.description.toLowerCase().includes(searchLower)) ||
+      (vendor && vendor.name.toLowerCase().includes(searchLower));
+    
+    return categoryMatch && vendorMatch && searchMatch;
   });
 
   const handleAddToCart = async (product: Product, quantity: number = 1) => {
@@ -146,7 +156,7 @@ export default function ShopPage() {
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-6 sm:mb-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Category Filter */}
             <div>
               <label className="block text-sm font-medium text-earth-700 mb-2">
@@ -182,6 +192,23 @@ export default function ShopPage() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Search Bar */}
+            <div>
+              <label className="block text-sm font-medium text-earth-700 mb-2">
+                Search Products
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name, description, or vendor..."
+                  className="input-field pl-10"
+                />
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-earth-400" />
+              </div>
             </div>
           </div>
         </div>
