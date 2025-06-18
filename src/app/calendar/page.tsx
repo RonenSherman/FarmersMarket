@@ -2,57 +2,126 @@
 
 import { useState, useEffect } from 'react';
 import { CalendarIcon, ClockIcon, MapPinIcon } from '@heroicons/react/24/outline';
-import { format, isThursday, isBefore, isAfter } from 'date-fns';
+import { format, isThursday, isBefore, isAfter, addWeeks, startOfDay } from 'date-fns';
+import { marketDateService } from '@/lib/database';
+import type { MarketDate } from '@/types';
 
 export default function CalendarPage() {
-  const [marketDates, setMarketDates] = useState<Date[]>([]);
+  const [marketDates, setMarketDates] = useState<MarketDate[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Generate next 24 Thursdays (6 months)
-    const generateMarketDates = () => {
-      const dates = [];
-      const today = new Date();
-      let currentDate = new Date(today);
-      
-      // Find next Thursday
-      const daysUntilThursday = (4 - currentDate.getDay() + 7) % 7;
-      if (daysUntilThursday === 0 && currentDate.getHours() >= 18) {
-        currentDate.setDate(currentDate.getDate() + 7);
-      } else {
-        currentDate.setDate(currentDate.getDate() + daysUntilThursday);
-      }
-      
-      // Generate 24 Thursdays
-      for (let i = 0; i < 24; i++) {
-        dates.push(new Date(currentDate));
-        currentDate.setDate(currentDate.getDate() + 7);
-      }
-      
-      return dates;
-    };
-
-    setMarketDates(generateMarketDates());
+    loadMarketDates();
   }, []);
 
-  const isMarketToday = (date: Date) => {
-    const today = new Date();
-    return (
-      date.toDateString() === today.toDateString() &&
-      isThursday(today) &&
-      today.getHours() < 18.5
-    );
-  };
+  const loadMarketDates = async () => {
+    try {
+      // Get all market dates from database
+      const allDates = await marketDateService.getAll();
+      
+      // Filter to only future dates and sort them
+      const today = startOfDay(new Date());
+      const futureDates = allDates
+        .filter(date => new Date(date.date) >= today)
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  const isMarketPast = (date: Date) => {
-    const today = new Date();
-    if (date.toDateString() === today.toDateString()) {
-      return isThursday(today) && today.getHours() >= 18.5;
+      // If no future dates in database, generate upcoming Thursdays
+      if (futureDates.length === 0) {
+        const generatedDates = generateUpcomingThursdays();
+        setMarketDates(generatedDates);
+      } else {
+        setMarketDates(futureDates);
+      }
+    } catch (error) {
+      console.error('Error loading market dates:', error);
+      // Fallback to generated dates if database fails
+      const generatedDates = generateUpcomingThursdays();
+      setMarketDates(generatedDates);
+    } finally {
+      setLoading(false);
     }
-    return isBefore(date, today);
   };
 
-  const getMarketStatus = (date: Date) => {
-    if (isMarketToday(date)) {
+  const generateUpcomingThursdays = (): MarketDate[] => {
+    const dates: MarketDate[] = [];
+    const today = new Date();
+    let currentDate = new Date(today);
+    
+    // Find next Thursday
+    const daysUntilThursday = (4 - currentDate.getDay() + 7) % 7;
+    if (daysUntilThursday === 0 && currentDate.getHours() >= 18) {
+      currentDate.setDate(currentDate.getDate() + 7);
+    } else {
+      currentDate.setDate(currentDate.getDate() + daysUntilThursday);
+    }
+    
+    // Generate 12 upcoming Thursdays
+    for (let i = 0; i < 12; i++) {
+      const dateString = currentDate.toISOString().split('T')[0];
+      dates.push({
+        id: `generated-${i}`,
+        date: dateString,
+        is_active: true,
+        start_time: '15:00:00',
+        end_time: '18:30:00',
+        weather_status: 'scheduled',
+        is_special_event: false,
+        created_at: new Date().toISOString()
+      });
+      currentDate = addWeeks(currentDate, 1);
+    }
+    
+    return dates;
+  };
+
+  const isMarketToday = (date: MarketDate) => {
+    const today = new Date();
+    const marketDate = new Date(date.date);
+    
+    if (marketDate.toDateString() !== today.toDateString()) {
+      return false;
+    }
+
+    if (!isThursday(today)) {
+      return false;
+    }
+
+    // Check if market is currently open using the actual times
+    const now = new Date();
+    const [startHour, startMinute] = date.start_time.split(':').map(Number);
+    const [endHour, endMinute] = date.end_time.split(':').map(Number);
+    
+    const marketStartTime = new Date();
+    marketStartTime.setHours(startHour, startMinute, 0, 0);
+    
+    const marketEndTime = new Date();
+    marketEndTime.setHours(endHour, endMinute, 0, 0);
+    
+    return now >= marketStartTime && now <= marketEndTime;
+  };
+
+  const isMarketPast = (date: MarketDate) => {
+    const today = new Date();
+    const marketDate = new Date(date.date);
+    
+    if (marketDate.toDateString() === today.toDateString()) {
+      // If it's today, check if market has ended
+      const now = new Date();
+      const [endHour, endMinute] = date.end_time.split(':').map(Number);
+      const marketEndTime = new Date();
+      marketEndTime.setHours(endHour, endMinute, 0, 0);
+      return now > marketEndTime;
+    }
+    
+    return marketDate < today;
+  };
+
+  const getMarketStatus = (date: MarketDate) => {
+    if (date.weather_status === 'cancelled') {
+      return { status: 'cancelled', label: 'Cancelled', color: 'bg-red-100 text-red-800 border-red-200' };
+    } else if (date.weather_status === 'delayed') {
+      return { status: 'delayed', label: 'Delayed', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' };
+    } else if (isMarketToday(date)) {
       return { status: 'active', label: 'Market Open Now', color: 'bg-green-100 text-green-800 border-green-200' };
     } else if (isMarketPast(date)) {
       return { status: 'past', label: 'Market Ended', color: 'bg-gray-100 text-gray-600 border-gray-200' };
@@ -60,6 +129,24 @@ export default function CalendarPage() {
       return { status: 'upcoming', label: 'Upcoming Market', color: 'bg-market-100 text-market-800 border-market-200' };
     }
   };
+
+  const formatTime = (timeString: string) => {
+    const [hours, minutes] = timeString.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-earth-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-market-600"></div>
+          <p className="mt-4 text-earth-600">Loading calendar...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-earth-50 py-12">
@@ -105,25 +192,25 @@ export default function CalendarPage() {
 
         {/* Calendar Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {marketDates.map((date, index) => {
+          {marketDates.map((date) => {
             const marketInfo = getMarketStatus(date);
             
             return (
               <div
-                key={index}
+                key={date.id}
                 className={`bg-white rounded-lg shadow-md p-6 border-2 transition-all duration-200 hover:shadow-lg ${
                   marketInfo.status === 'active' ? 'ring-2 ring-green-400' : ''
                 }`}
               >
                 <div className="text-center">
                   <div className="text-3xl font-bold text-earth-800 mb-2">
-                    {format(date, 'd')}
+                    {format(new Date(date.date), 'd')}
                   </div>
                   <div className="text-lg font-semibold text-earth-700 mb-1">
-                    {format(date, 'MMMM yyyy')}
+                    {format(new Date(date.date), 'MMMM yyyy')}
                   </div>
                   <div className="text-sm text-earth-600 mb-4">
-                    {format(date, 'EEEE')}
+                    {format(new Date(date.date), 'EEEE')}
                   </div>
                   
                   <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${marketInfo.color}`}>
@@ -136,7 +223,7 @@ export default function CalendarPage() {
                         🎪 Market is open now!
                       </div>
                       <div className="text-xs text-green-600 mt-1">
-                        Visit us until 6:30 PM
+                        Visit us until {formatTime(date.end_time)}
                       </div>
                     </div>
                   )}
@@ -144,10 +231,32 @@ export default function CalendarPage() {
                   {marketInfo.status === 'upcoming' && (
                     <div className="mt-4">
                       <div className="text-sm text-market-700">
-                        3:00 PM - 6:30 PM
+                        {formatTime(date.start_time)} - {formatTime(date.end_time)}
                       </div>
                       <div className="text-xs text-earth-600 mt-1">
                         Pre-orders available online
+                      </div>
+                    </div>
+                  )}
+
+                  {marketInfo.status === 'cancelled' && (
+                    <div className="mt-4">
+                      <div className="text-sm text-red-700 font-medium">
+                        ❌ Market Cancelled
+                      </div>
+                      <div className="text-xs text-red-600 mt-1">
+                        Check back for updates
+                      </div>
+                    </div>
+                  )}
+
+                  {marketInfo.status === 'delayed' && (
+                    <div className="mt-4">
+                      <div className="text-sm text-yellow-700 font-medium">
+                        ⏰ Market Delayed
+                      </div>
+                      <div className="text-xs text-yellow-600 mt-1">
+                        Check back for updates
                       </div>
                     </div>
                   )}
