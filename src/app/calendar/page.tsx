@@ -19,6 +19,7 @@ export default function CalendarPage() {
       // Get all market dates from database
       const allDates = await marketDateService.getAll();
       console.log('All dates from database:', allDates);
+      console.log('Database dates length:', allDates.length);
       
       // Sort all dates chronologically (no filtering since all are future dates)
       const sortedDates = allDates.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -28,9 +29,11 @@ export default function CalendarPage() {
 
       // Always use database dates if they exist, only fallback if database is empty
       if (allDates.length > 0) {
+        console.log('✅ Using database dates - count:', sortedDates.length);
         setMarketDates(sortedDates);
         console.log('Using database dates:', sortedDates.length, 'dates');
       } else {
+        console.log('❌ No database dates found, using generated dates');
         const generatedDates = generateUpcomingThursdays();
         setMarketDates(generatedDates);
         console.log('Using generated dates:', generatedDates.length, 'dates');
@@ -51,6 +54,8 @@ export default function CalendarPage() {
     const today = new Date();
     let currentDate = new Date(today);
 
+    console.log('Generating Thursdays starting from:', currentDate.toISOString());
+
     // Find next Thursday (4 = Thursday)
     let daysUntilThursday = (4 - currentDate.getDay() + 7) % 7;
     if (daysUntilThursday === 0 && currentDate.getHours() >= 18) {
@@ -58,9 +63,13 @@ export default function CalendarPage() {
     }
     currentDate.setDate(currentDate.getDate() + daysUntilThursday);
 
+    console.log('First Thursday will be:', currentDate.toISOString());
+
     // Generate 12 upcoming Thursdays
     for (let i = 0; i < 12; i++) {
       const dateString = currentDate.toISOString().split('T')[0];
+      console.log(`Generated date ${i}:`, dateString, 'Day of week:', currentDate.getDay());
+      
       dates.push({
         id: `generated-${i}`,
         date: dateString,
