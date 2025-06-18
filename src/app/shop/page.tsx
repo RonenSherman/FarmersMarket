@@ -7,6 +7,8 @@ import { useMarketStore } from '@/store/marketStore';
 import { MinusIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import type { Vendor, Product, VendorCart, PricingUnit } from '@/types';
 import { PRICING_UNIT_LABELS } from '@/types';
+import { isMarketOpen, getNextMarketDate, formatMarketDate } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 export default function ShopPage() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -14,6 +16,8 @@ export default function ShopPage() {
   const [loading, setLoading] = useState(true);
   const [selectedVendor, setSelectedVendor] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [marketOpen, setMarketOpen] = useState(true);
+  const router = useRouter();
 
   const { addToCart, carts, products, setProducts, getAvailableStock, removeFromCart, updateCartQuantity } = useMarketStore();
 
@@ -31,7 +35,16 @@ export default function ShopPage() {
   ];
 
   useEffect(() => {
-    loadShopData();
+    const open = isMarketOpen();
+    setMarketOpen(open);
+    if (!open) {
+      toast.error('The market is currently closed. Redirecting to calendar...');
+      setTimeout(() => {
+        router.replace('/calendar');
+      }, 3500);
+    } else {
+      loadShopData();
+    }
   }, []);
 
   const loadShopData = async () => {
@@ -130,6 +143,23 @@ export default function ShopPage() {
     const item = vendorCart?.items.find((item: any) => item.product.id === productId);
     return item?.quantity || 0;
   };
+
+  if (!marketOpen) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-earth-50">
+        <div className="bg-white rounded-lg shadow-lg p-8 text-center max-w-md mx-auto">
+          <h2 className="text-2xl font-bold text-earth-800 mb-4">Market Closed</h2>
+          <p className="text-lg text-earth-700 mb-2">
+            The market is currently closed. Please come back at the next market date!
+          </p>
+          <p className="text-earth-600 mb-4">
+            Next market: <strong>{formatMarketDate(getNextMarketDate())}</strong>
+          </p>
+          <p className="text-market-600">Redirecting you to the calendar...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
