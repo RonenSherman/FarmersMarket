@@ -20,18 +20,16 @@ export default function CalendarPage() {
       const allDates = await marketDateService.getAll();
       console.log('All dates from database:', allDates);
       
-      // Filter to only future dates and sort them
-      const today = startOfDay(new Date());
-      const futureDates = allDates
-        .filter(date => new Date(date.date) >= today)
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      // Sort all dates chronologically (no filtering since all are future dates)
+      const sortedDates = allDates.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-      console.log('Future dates after filtering:', futureDates);
+      console.log('Sorted dates:', sortedDates);
+      console.log('Today is:', new Date().toISOString());
 
       // Always use database dates if they exist, only fallback if database is empty
       if (allDates.length > 0) {
-        setMarketDates(futureDates);
-        console.log('Using database dates:', futureDates.length, 'dates');
+        setMarketDates(sortedDates);
+        console.log('Using database dates:', sortedDates.length, 'dates');
       } else {
         const generatedDates = generateUpcomingThursdays();
         setMarketDates(generatedDates);
