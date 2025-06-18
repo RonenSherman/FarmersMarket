@@ -24,7 +24,8 @@ export default function CalendarPage() {
       // Log each date with its day of week
       console.log('Individual dates from database:');
       allDates.forEach((date, index) => {
-        const dateObj = new Date(date.date);
+        // Fix timezone issue by ensuring date is parsed in local timezone
+        const dateObj = new Date(date.date + 'T00:00:00');
         console.log(`Date ${index + 1}: ${date.date} (${dateObj.toDateString()}) - Day of week: ${dateObj.getDay()} (${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dateObj.getDay()]})`);
       });
       
@@ -95,7 +96,8 @@ export default function CalendarPage() {
 
   const isMarketToday = (date: MarketDate) => {
     const today = new Date();
-    const marketDate = new Date(date.date);
+    // Fix timezone issue by ensuring date is parsed in local timezone
+    const marketDate = new Date(date.date + 'T00:00:00');
     
     if (marketDate.toDateString() !== today.toDateString()) {
       return false;
@@ -121,7 +123,8 @@ export default function CalendarPage() {
 
   const isMarketPast = (date: MarketDate) => {
     const today = new Date();
-    const marketDate = new Date(date.date);
+    // Fix timezone issue by ensuring date is parsed in local timezone
+    const marketDate = new Date(date.date + 'T00:00:00');
     
     if (marketDate.toDateString() === today.toDateString()) {
       // If it's today, check if market has ended
@@ -213,7 +216,8 @@ export default function CalendarPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {marketDates.map((date) => {
             const marketInfo = getMarketStatus(date);
-            const dateObj = new Date(date.date);
+            // Fix timezone issue by ensuring date is parsed in local timezone
+            const dateObj = new Date(date.date + 'T00:00:00');
             const formattedDay = format(dateObj, 'EEEE');
             const dayOfWeek = dateObj.getDay();
             const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -229,13 +233,13 @@ export default function CalendarPage() {
               >
                 <div className="text-center">
                   <div className="text-3xl font-bold text-earth-800 mb-2">
-                    {format(new Date(date.date), 'd')}
+                    {format(dateObj, 'd')}
                   </div>
                   <div className="text-lg font-semibold text-earth-700 mb-1">
-                    {format(new Date(date.date), 'MMMM yyyy')}
+                    {format(dateObj, 'MMMM yyyy')}
                   </div>
                   <div className="text-sm text-earth-600 mb-4">
-                    {format(new Date(date.date), 'EEEE')}
+                    {format(dateObj, 'EEEE')}
                   </div>
                   
                   <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${marketInfo.color}`}>
