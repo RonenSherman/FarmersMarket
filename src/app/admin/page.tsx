@@ -972,14 +972,14 @@ export default function AdminPage() {
             {/* Existing Dates */}
             <div className="space-y-3 max-h-64 overflow-y-auto">
               {state.marketDates
-                .filter(date => new Date(date.date) >= new Date(new Date().toDateString()))
-                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                .filter(date => new Date(date.date + 'T00:00:00') >= new Date(new Date().toDateString()))
+                .sort((a, b) => new Date(a.date + 'T00:00:00').getTime() - new Date(b.date + 'T00:00:00').getTime())
                 .map((date) => (
                 <div key={date.id} className="p-3 border border-earth-200 rounded-lg">
                   <div className="flex justify-between items-center mb-2">
                     <div>
                       <p className="font-medium text-earth-800">
-                        {new Date(date.date).toLocaleDateString('en-US', {
+                        {new Date(date.date + 'T00:00:00').toLocaleDateString('en-US', {
                           weekday: 'long',
                           year: 'numeric',
                           month: 'long',
