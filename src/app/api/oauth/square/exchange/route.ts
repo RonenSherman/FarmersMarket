@@ -27,6 +27,12 @@ export async function POST(request: NextRequest) {
       : 'https://connect.squareupsandbox.com/oauth2/token';
 
     console.log(`Exchanging Square code with ${tokenUrl}`);
+    console.log('Request payload:', {
+      client_id: process.env.SQUARE_CLIENT_ID?.substring(0, 10) + '...',
+      client_secret: process.env.SQUARE_CLIENT_SECRET?.substring(0, 10) + '...',
+      code: code?.substring(0, 10) + '...',
+      grant_type: 'authorization_code',
+    });
 
     const tokenResponse = await fetch(tokenUrl, {
       method: 'POST',
