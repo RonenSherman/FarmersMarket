@@ -41,7 +41,7 @@ const Navigation = () => {
                 <span className="text-white font-bold text-sm">DFM</span>
               </div>
               <span className="font-bold text-xl text-earth-800">
-                Duvall Farmers Market
+                Duvall Farmers Market Online Service
               </span>
             </Link>
           </div>

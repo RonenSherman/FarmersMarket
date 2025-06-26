@@ -71,7 +71,7 @@ The system is **fully functional** - just add SendGrid API key when ready for pr
 ## 📧 **Sample Email Content**
 
 When you test, you'll see beautiful HTML email templates with:
-- Professional Duvall Farmers Market branding
+- Professional Duvall Farmers Market Online Service branding
 - Order details and status updates
 - Secure cancellation links
 - Mobile-responsive design 

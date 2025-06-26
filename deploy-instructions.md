@@ -38,4 +38,4 @@ Location of your files: `C:\projects\FarmersMarket\duvall-farmers-market\out`
 - Works on any hosting platform
 
 ## 🎉 Once deployed:
-Your Duvall Farmers Market website will be available 24/7 online! 
+Your Duvall Farmers Market Online Service website will be available 24/7 online! 

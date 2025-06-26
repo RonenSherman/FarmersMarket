@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Duvall Farmers Market Online Service',
-  description: 'Online ordering platform for the Duvall Farmers Market - Fresh local produce, artisan goods, and more every Thursday',
+  description: 'Online ordering platform for the Duvall Farmers Market Online Service - Fresh local produce, artisan goods, and more every Thursday',
   keywords: 'farmers market, local produce, artisan goods, Duvall, fresh food, organic',
 }
 

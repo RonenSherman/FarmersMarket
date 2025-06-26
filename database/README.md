@@ -1,4 +1,4 @@
-# 🏆 **DUVALL FARMERS MARKET DATABASE**
+# 🏆 **DUVALL FARMERS MARKET ONLINE SERVICE DATABASE**
 ## **PostgreSQL + Supabase - Enterprise-Grade Solution**
 
 ### **🚀 Best Database Stack for Farmers Market:**

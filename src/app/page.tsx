@@ -206,7 +206,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-sage-800 mb-6">
-              Why Choose <span className="text-sage-700">Duvall Farmers Market</span>
+              Why Choose <span className="text-sage-700">Duvall Farmers Market Online Service</span>
             </h2>
             <p className="text-xl text-sage-600 max-w-3xl mx-auto leading-relaxed">
               We're not just another market – we're where neighbors become friends, 

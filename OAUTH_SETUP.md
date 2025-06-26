@@ -1,6 +1,6 @@
 # OAuth Payment Integration Setup
 
-This document outlines the setup process for integrating Square and Stripe OAuth payment processing into the Duvall Farmers Market application.
+This document outlines the setup process for integrating Square and Stripe OAuth payment processing into the Duvall Farmers Market Online Service application.
 
 ## Overview
 

@@ -1,6 +1,6 @@
 # Duvall Farmers Market Online Service
 
-A modern, responsive web application for the Duvall Farmers Market, built with Next.js, TypeScript, and Tailwind CSS. This platform allows customers to browse vendors, view products, place orders online, and pick them up at the market.
+A modern, responsive web application for the Duvall Farmers Market Online Service, built with Next.js, TypeScript, and Tailwind CSS. This platform allows customers to browse vendors, view products, place orders online, and pick them up at the market.
 
 ## 🚀 Quick Deploy
 
@@ -74,7 +74,7 @@ Once deployed, your website will be available 24/7 at your custom domain!
    ADMIN_PASSWORD=your_admin_password
 
    # Market Configuration
-   NEXT_PUBLIC_MARKET_NAME=Duvall Farmers Market
+   NEXT_PUBLIC_MARKET_NAME=Duvall Farmers Market Online Service
    NEXT_PUBLIC_MARKET_DAY=thursday
    NEXT_PUBLIC_MARKET_END_TIME=18:30
    ```
@@ -221,7 +221,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 For questions or support, please contact:
 - Email: info@duvallmarket.com
-- Website: [Duvall Farmers Market](https://duvallmarket.com)
+- Website: [Duvall Farmers Market Online Service](https://duvallmarket.com)
 
 ## Acknowledgments
 

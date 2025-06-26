@@ -87,7 +87,7 @@ export default function CartPage() {
               Start shopping to add items to your cart
             </p>
           <Link href="/shop" className="btn-primary text-base sm:text-lg px-6 sm:px-8 py-2 sm:py-3">
-              Browse Market
+                              Browse Online Market
             </Link>
           </div>
         </div>
@@ -189,7 +189,7 @@ export default function CartPage() {
             <div>
               <h4 className="font-medium text-earth-800 mb-2">Pickup Instructions</h4>
               <ul className="space-y-1">
-                <li>• Orders will be ready for pickup at the market</li>
+                <li>• Orders will be ready for pickup at the Duvall Farmers Market</li>
                 <li>• Bring your order confirmation</li>
                 <li>• Visit each vendor's booth separately</li>
                 <li>• Payment is processed at pickup</li>

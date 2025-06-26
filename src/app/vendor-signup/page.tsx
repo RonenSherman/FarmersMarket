@@ -223,7 +223,7 @@ export default function VendorSignupPage() {
               Application Submitted Successfully!
             </h1>
             <p className="text-lg text-earth-600 mb-6">
-              Thank you for applying to become a vendor at the Duvall Farmers Market.
+                              Thank you for applying to become a vendor at the Duvall Farmers Market Online Service.
             </p>
             
             {paymentConnection ? (
@@ -382,7 +382,7 @@ export default function VendorSignupPage() {
               Become a Vendor
             </h1>
             <p className="text-lg text-earth-600">
-              Join the Duvall Farmers Market community and share your products with local customers
+              Join the Duvall Farmers Market Online Service community and share your products with local customers
             </p>
           </div>
 

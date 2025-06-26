@@ -119,7 +119,7 @@ class CustomerNotificationService {
     const html = `
       <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
         <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-          <h1 style="margin: 0; font-size: 28px;">${statusEmojis[status]} Duvall Farmers Market</h1>
+          <h1 style="margin: 0; font-size: 28px;">${statusEmojis[status]} Duvall Farmers Market Online Service</h1>
           <p style="margin: 10px 0 0; font-size: 16px; opacity: 0.9;">Order Update</p>
         </div>
         
@@ -152,7 +152,8 @@ class CustomerNotificationService {
           <p style="margin: 0; color: #6b7280; font-size: 14px;">
             📍 Duvall Farmers Market<br>
             🕒 Saturdays 9:00 AM - 2:00 PM<br>
-            📧 Questions? Reply to this email
+            📧 Questions? Reply to this email<br>
+            <small>Powered by Duvall Farmers Market Online Service</small>
           </p>
         </div>
       </div>
@@ -177,6 +178,7 @@ class CustomerNotificationService {
       
       Duvall Farmers Market
       Saturdays 9:00 AM - 2:00 PM
+      Powered by Duvall Farmers Market Online Service
     `;
 
     return { subject, html, text };
@@ -329,7 +331,7 @@ class CustomerNotificationService {
         }],
         from: {
           email: this.fromEmail,
-          name: 'Duvall Farmers Market'
+          name: 'Duvall Farmers Market Online Service'
         },
         content: [
           { type: 'text/plain', value: template.text },
@@ -371,12 +373,12 @@ class CustomerNotificationService {
       ? `✅ ${vendor.payment_provider.charAt(0).toUpperCase() + vendor.payment_provider.slice(1)} payment connected`
       : '⚠️ Payment setup needed';
 
-    const subject = `🎉 Welcome to Duvall Farmers Market - ${vendor.business_name}!`;
+    const subject = `🎉 Welcome to Duvall Farmers Market Online Service - ${vendor.business_name}!`;
     
     const html = `
       <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
         <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-          <h1 style="margin: 0; font-size: 28px;">🎉 Welcome to Duvall Farmers Market!</h1>
+          <h1 style="margin: 0; font-size: 28px;">🎉 Welcome to Duvall Farmers Market Online Service!</h1>
           <p style="margin: 10px 0 0; font-size: 16px; opacity: 0.9;">Vendor Registration Complete</p>
         </div>
         
@@ -384,7 +386,7 @@ class CustomerNotificationService {
           <h2 style="color: #059669; margin: 0 0 20px;">Welcome, ${vendor.business_name}!</h2>
           
           <p style="margin: 0 0 20px; font-size: 16px;">
-            Congratulations! Your vendor registration has been successfully completed. We're excited to have you join the Duvall Farmers Market community.
+            Congratulations! Your vendor registration has been successfully completed. We're excited to have you join the Duvall Farmers Market Online Service community.
           </p>
           
           <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -433,11 +435,11 @@ class CustomerNotificationService {
     `;
 
     const text = `
-      Welcome to Duvall Farmers Market!
+      Welcome to Duvall Farmers Market Online Service!
       
       Congratulations, ${vendor.business_name}!
       
-      Your vendor registration has been successfully completed. We're excited to have you join the Duvall Farmers Market community.
+      Your vendor registration has been successfully completed. We're excited to have you join the Duvall Farmers Market Online Service community.
       
       Registration Details:
       - Business Name: ${vendor.business_name}
@@ -460,7 +462,7 @@ class CustomerNotificationService {
       🌐 duvallfarmersmarket.org
       
       Welcome to the community!
-      Duvall Farmers Market Team
+      Duvall Farmers Market Online Service Team
     `;
 
     return { subject, html, text };

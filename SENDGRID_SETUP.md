@@ -5,7 +5,7 @@
 1. **Log into SendGrid**: https://app.sendgrid.com/
 2. **Navigate to Settings** → **API Keys**
 3. **Create API Key**:
-   - Name: `Duvall Farmers Market`
+   - Name: `Duvall Farmers Market Online Service`
    - Permissions: **Full Access** (or at minimum: Mail Send)
 4. **Copy the API Key** (it starts with `SG.`)
 
