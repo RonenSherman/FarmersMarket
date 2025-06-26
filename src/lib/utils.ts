@@ -47,7 +47,8 @@ export function isMarketOpenWithTimes(startTime: string, endTime: string): boole
   const marketEndTime = new Date();
   marketEndTime.setHours(endHour, endMinute, 0, 0);
   
-  return isAfter(now, marketStartTime) && isBefore(now, marketEndTime);
+  // Use inclusive comparisons: market is open from start time (inclusive) to end time (inclusive)
+  return now >= marketStartTime && now <= marketEndTime;
 }
 
 export function formatMarketDate(date: Date): string {
