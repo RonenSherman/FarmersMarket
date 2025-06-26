@@ -103,10 +103,7 @@ export default function CalendarPage() {
       return false;
     }
 
-    if (!isThursday(today)) {
-      return false;
-    }
-
+    // Remove the Thursday check - market can be on any day
     // Check if market is currently open using the actual times
     const now = new Date();
     const [startHour, startMinute] = date.start_time.split(':').map(Number);
@@ -119,6 +116,30 @@ export default function CalendarPage() {
     marketEndTime.setHours(endHour, endMinute, 0, 0);
     
     return now >= marketStartTime && now <= marketEndTime;
+  };
+
+  const isMarketTodayButNotOpen = (date: MarketDate) => {
+    const today = new Date();
+    // Fix timezone issue by ensuring date is parsed in local timezone
+    const marketDate = new Date(date.date + 'T00:00:00');
+    
+    if (marketDate.toDateString() !== today.toDateString()) {
+      return false;
+    }
+
+    // Check if market is today but not currently within the time window
+    const now = new Date();
+    const [startHour, startMinute] = date.start_time.split(':').map(Number);
+    const [endHour, endMinute] = date.end_time.split(':').map(Number);
+    
+    const marketStartTime = new Date();
+    marketStartTime.setHours(startHour, startMinute, 0, 0);
+    
+    const marketEndTime = new Date();
+    marketEndTime.setHours(endHour, endMinute, 0, 0);
+    
+    // It's today but either before start time or after end time
+    return now < marketStartTime || now > marketEndTime;
   };
 
   const isMarketPast = (date: MarketDate) => {
@@ -145,6 +166,8 @@ export default function CalendarPage() {
       return { status: 'delayed', label: 'Delayed', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' };
     } else if (isMarketToday(date)) {
       return { status: 'active', label: 'Market Open Now', color: 'bg-green-100 text-green-800 border-green-200' };
+    } else if (isMarketTodayButNotOpen(date)) {
+      return { status: 'ongoing', label: 'Ongoing Today', color: 'bg-blue-100 text-blue-800 border-blue-200' };
     } else if (isMarketPast(date)) {
       return { status: 'past', label: 'Market Ended', color: 'bg-gray-100 text-gray-600 border-gray-200' };
     } else {
@@ -179,7 +202,7 @@ export default function CalendarPage() {
             Market Calendar
           </h1>
           <p className="text-lg text-earth-600 max-w-2xl mx-auto">
-            The Duvall Farmers Market is held every Thursday. Mark your calendar and join us for fresh, 
+            Check our calendar for upcoming market dates. Join us for fresh, 
             local produce and artisan goods from our community vendors.
           </p>
         </div>
@@ -192,7 +215,7 @@ export default function CalendarPage() {
               <CalendarIcon className="h-6 w-6 text-market-600 mr-3 mt-1" />
               <div>
                 <h3 className="font-semibold text-earth-800">When</h3>
-                <p className="text-earth-600">Every Thursday</p>
+                <p className="text-earth-600">Check calendar for dates</p>
               </div>
             </div>
             <div className="flex items-start">
@@ -257,6 +280,17 @@ export default function CalendarPage() {
                     </div>
                   )}
                   
+                  {marketInfo.status === 'ongoing' && (
+                    <div className="mt-4">
+                      <div className="text-sm text-blue-700 font-medium">
+                        📅 Market happening today
+                      </div>
+                      <div className="text-xs text-blue-600 mt-1">
+                        {formatTime(date.start_time)} - {formatTime(date.end_time)}
+                      </div>
+                    </div>
+                  )}
+
                   {marketInfo.status === 'upcoming' && (
                     <div className="mt-4">
                       <div className="text-sm text-market-700">
