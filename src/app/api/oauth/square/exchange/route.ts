@@ -53,10 +53,21 @@ export async function POST(request: NextRequest) {
       console.error('Square token exchange failed:', {
         status: tokenResponse.status,
         statusText: tokenResponse.statusText,
-        error: errorData
+        fullError: JSON.stringify(errorData, null, 2)
       });
+      
+      // Extract specific error details
+      const errorMessage = errorData.errors?.[0]?.detail || errorData.error || tokenResponse.statusText;
+      const errorCode = errorData.errors?.[0]?.code || 'UNKNOWN';
+      
+      console.error('Square error details:', {
+        code: errorCode,
+        message: errorMessage,
+        allErrors: errorData.errors
+      });
+      
       return NextResponse.json(
-        { error: `Token exchange failed: ${errorData.error || tokenResponse.statusText}` },
+        { error: `Token exchange failed: ${errorMessage} (${errorCode})` },
         { status: 400 }
       );
     }
