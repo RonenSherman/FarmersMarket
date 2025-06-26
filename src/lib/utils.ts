@@ -32,21 +32,18 @@ export function isMarketOpen(): boolean {
 
 export function isMarketOpenWithTimes(startTime: string, endTime: string): boolean {
   const now = new Date();
-  
-  if (!isThursday(now)) {
-    return false;
-  }
-  
+
+  // No longer check for Thursday; just check if now is within the market times
   // Parse the time strings (format: "HH:MM" or "HH:MM:SS")
   const [startHour, startMinute] = startTime.split(':').map(Number);
   const [endHour, endMinute] = endTime.split(':').map(Number);
-  
+
   const marketStartTime = new Date();
   marketStartTime.setHours(startHour, startMinute, 0, 0);
-  
+
   const marketEndTime = new Date();
   marketEndTime.setHours(endHour, endMinute, 0, 0);
-  
+
   // Use inclusive comparisons: market is open from start time (inclusive) to end time (inclusive)
   return now >= marketStartTime && now <= marketEndTime;
 }
