@@ -144,7 +144,21 @@ export default function VendorSignupPage() {
 
 
 
-  const handleSkipPayment = () => {
+  const handleSkipPayment = async () => {
+    if (tempVendorId) {
+      try {
+        // Send welcome email for vendor who skipped payment setup
+        await fetch('/api/send-vendor-welcome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vendorId: tempVendorId })
+        });
+      } catch (error) {
+        console.error('Failed to send welcome email:', error);
+        // Don't block the user flow if email fails
+      }
+    }
+    
     toast.success('Application submitted! You can connect your payment account later from the vendor portal.');
     setStep('complete');
     reset();

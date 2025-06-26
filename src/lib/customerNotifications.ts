@@ -292,6 +292,179 @@ class CustomerNotificationService {
   ): Promise<boolean> {
     return this.sendOrderNotification(order, notificationMethod, false);
   }
+
+  // Send vendor welcome email
+  async sendVendorWelcomeEmail(vendor: {
+    business_name: string;
+    contact_email: string;
+    payment_provider?: string;
+    payment_connected?: boolean;
+  }): Promise<boolean> {
+    console.log('📧 Sending vendor welcome email');
+    console.log('📧 Vendor:', vendor.business_name);
+    console.log('📧 Email:', vendor.contact_email);
+    console.log('📧 Payment provider:', vendor.payment_provider);
+    
+    const template = this.createVendorWelcomeTemplate(vendor);
+    
+    if (!this.apiKey) {
+      console.log('📧 VENDOR EMAIL SIMULATION - SendGrid API key not configured');
+      console.log('📧 Would send to:', vendor.contact_email);
+      console.log('📧 Subject:', template.subject);
+      console.log('📧 HTML content preview:', template.html.substring(0, 200) + '...');
+      console.log('📧 To enable real emails, set SENDGRID_API_KEY environment variable');
+      return true; // Return true for demo purposes
+    }
+
+    try {
+      console.log('📧 SENDING REAL VENDOR WELCOME EMAIL via SendGrid');
+      console.log('📧 To:', vendor.contact_email);
+      console.log('📧 From:', this.fromEmail);
+      console.log('📧 Subject:', template.subject);
+      
+      const emailPayload = {
+        personalizations: [{
+          to: [{ email: vendor.contact_email, name: vendor.business_name }],
+          subject: template.subject
+        }],
+        from: {
+          email: this.fromEmail,
+          name: 'Duvall Farmers Market'
+        },
+        content: [
+          { type: 'text/plain', value: template.text },
+          { type: 'text/html', value: template.html }
+        ]
+      };
+      
+      const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailPayload)
+      });
+
+      if (response.ok) {
+        console.log('✅ Vendor welcome email sent successfully via SendGrid!');
+        return true;
+      } else {
+        const errorText = await response.text();
+        console.error('❌ SendGrid API error for vendor email:', response.status, errorText);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Failed to send vendor welcome email:', error);
+      return false;
+    }
+  }
+
+  // Create vendor welcome email template
+  private createVendorWelcomeTemplate(vendor: {
+    business_name: string;
+    contact_email: string;
+    payment_provider?: string;
+    payment_connected?: boolean;
+  }): EmailTemplate {
+    const paymentStatus = vendor.payment_connected && vendor.payment_provider 
+      ? `✅ ${vendor.payment_provider.charAt(0).toUpperCase() + vendor.payment_provider.slice(1)} payment connected`
+      : '⚠️ Payment setup needed';
+
+    const subject = `🎉 Welcome to Duvall Farmers Market - ${vendor.business_name}!`;
+    
+    const html = `
+      <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="margin: 0; font-size: 28px;">🎉 Welcome to Duvall Farmers Market!</h1>
+          <p style="margin: 10px 0 0; font-size: 16px; opacity: 0.9;">Vendor Registration Complete</p>
+        </div>
+        
+        <div style="background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none;">
+          <h2 style="color: #059669; margin: 0 0 20px;">Welcome, ${vendor.business_name}!</h2>
+          
+          <p style="margin: 0 0 20px; font-size: 16px;">
+            Congratulations! Your vendor registration has been successfully completed. We're excited to have you join the Duvall Farmers Market community.
+          </p>
+          
+          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin: 0 0 15px; color: #374151;">Registration Details</h3>
+            <p style="margin: 5px 0; color: #6b7280;"><strong>Business Name:</strong> ${vendor.business_name}</p>
+            <p style="margin: 5px 0; color: #6b7280;"><strong>Contact Email:</strong> ${vendor.contact_email}</p>
+            <p style="margin: 5px 0; color: #6b7280;"><strong>Payment Status:</strong> ${paymentStatus}</p>
+          </div>
+          
+          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin: 0 0 15px; color: #d97706;">📋 Next Steps</h3>
+            <ul style="margin: 0; padding-left: 20px; color: #92400e;">
+              <li style="margin: 5px 0;">Check your email for market updates and announcements</li>
+              <li style="margin: 5px 0;">Prepare your products and inventory for market days</li>
+              <li style="margin: 5px 0;">Review market guidelines and vendor requirements</li>
+              ${!vendor.payment_connected ? '<li style="margin: 5px 0;"><strong>Complete your payment setup to start accepting orders</strong></li>' : ''}
+            </ul>
+          </div>
+          
+          <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin: 0 0 15px; color: #0369a1;">📅 Market Information</h3>
+            <p style="margin: 5px 0; color: #0c4a6e;"><strong>Location:</strong> Duvall Farmers Market</p>
+            <p style="margin: 5px 0; color: #0c4a6e;"><strong>Schedule:</strong> Saturdays 9:00 AM - 2:00 PM</p>
+            <p style="margin: 5px 0; color: #0c4a6e;"><strong>Setup Time:</strong> 8:00 AM - 9:00 AM</p>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://farmers-market-3ct4.vercel.app'}/shop" 
+               style="background: #059669; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+              🛒 View Market Shop
+            </a>
+          </div>
+        </div>
+        
+        <div style="background: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e5e7eb; border-top: none;">
+          <p style="margin: 0 0 10px; color: #6b7280; font-size: 14px;">
+            <strong>Questions or need help?</strong><br>
+            Reply to this email or contact our market coordinator
+          </p>
+          <p style="margin: 0; color: #6b7280; font-size: 14px;">
+            📧 info@duvallfarmersmarket.org<br>
+            🌐 duvallfarmersmarket.org
+          </p>
+        </div>
+      </div>
+    `;
+
+    const text = `
+      Welcome to Duvall Farmers Market!
+      
+      Congratulations, ${vendor.business_name}!
+      
+      Your vendor registration has been successfully completed. We're excited to have you join the Duvall Farmers Market community.
+      
+      Registration Details:
+      - Business Name: ${vendor.business_name}
+      - Contact Email: ${vendor.contact_email}
+      - Payment Status: ${paymentStatus}
+      
+      Next Steps:
+      • Check your email for market updates and announcements
+      • Prepare your products and inventory for market days
+      • Review market guidelines and vendor requirements
+      ${!vendor.payment_connected ? '• Complete your payment setup to start accepting orders' : ''}
+      
+      Market Information:
+      📅 Schedule: Saturdays 9:00 AM - 2:00 PM
+      🕒 Setup Time: 8:00 AM - 9:00 AM
+      📍 Location: Duvall Farmers Market
+      
+      Questions or need help?
+      📧 info@duvallfarmersmarket.org
+      🌐 duvallfarmersmarket.org
+      
+      Welcome to the community!
+      Duvall Farmers Market Team
+    `;
+
+    return { subject, html, text };
+  }
 }
 
 export const customerNotificationService = CustomerNotificationService.getInstance(); 

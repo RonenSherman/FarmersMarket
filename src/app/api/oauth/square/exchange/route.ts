@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { customerNotificationService } from '@/lib/customerNotifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -179,6 +180,30 @@ export async function POST(request: NextRequest) {
         { error: `Failed to update vendor: ${vendorError.message}` },
         { status: 500 }
       );
+    }
+
+    // Get the updated vendor information for the welcome email
+    const { data: updatedVendor, error: vendorFetchError } = await supabase
+      .from('vendors')
+      .select('business_name, contact_email, payment_provider, payment_connected')
+      .eq('id', vendorId)
+      .single();
+
+    if (!vendorFetchError && updatedVendor) {
+      // Send welcome email to the vendor
+      try {
+        console.log('📧 Sending vendor welcome email...');
+        await customerNotificationService.sendVendorWelcomeEmail({
+          business_name: updatedVendor.business_name,
+          contact_email: updatedVendor.contact_email,
+          payment_provider: updatedVendor.payment_provider,
+          payment_connected: updatedVendor.payment_connected
+        });
+        console.log('✅ Vendor welcome email sent successfully');
+      } catch (emailError) {
+        console.error('❌ Failed to send vendor welcome email:', emailError);
+        // Don't fail the entire request if email fails
+      }
     }
 
     return NextResponse.json({
