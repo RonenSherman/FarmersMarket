@@ -478,10 +478,86 @@ export default function AdminPage() {
                       <p className="text-sm text-earth-600">🏪 {order.vendors.name}</p>
                       <p className="text-sm text-earth-600">💰 ${order.total.toFixed(2)}</p>
                       <p className="text-sm text-earth-500">📅 {new Date(order.created_at).toLocaleDateString()}</p>
+                      
+                      {/* Order Items Breakdown */}
+                      <div className="mt-3 p-3 bg-earth-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <strong className="text-sm text-earth-800">📦 Order Items</strong>
+                          <span className="text-xs text-earth-500">{order.items?.length || 0} items</span>
+                        </div>
+                        {/* Debug info - remove this later */}
+                        {process.env.NODE_ENV === 'development' && (
+                          <div className="text-xs text-gray-500 mb-2">
+                            Debug: Items type: {typeof order.items}, Length: {order.items?.length}
+                          </div>
+                        )}
+                        {(() => {
+                          // Handle different formats of items data
+                          let items: any = order.items;
+                          
+                          // If items is a string, try to parse it as JSON
+                          if (typeof items === 'string') {
+                            try {
+                              items = JSON.parse(items);
+                            } catch (e) {
+                              console.error('Failed to parse items JSON:', e);
+                              items = [];
+                            }
+                          }
+                          
+                          return items && Array.isArray(items) && items.length > 0 ? (
+                            <div className="space-y-2">
+                              {items.map((item, index) => (
+                              <div key={index} className="flex justify-between items-center py-1 border-b border-earth-200 last:border-b-0">
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-earth-800">{item.product.name}</p>
+                                  <p className="text-xs text-earth-600">
+                                    ${item.product.price.toFixed(2)} per {item.product.unit}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-sm font-medium text-earth-800">
+                                    {item.quantity}x = ${(item.product.price * item.quantity).toFixed(2)}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                            <div className="pt-2 mt-2 border-t border-earth-300">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-semibold text-earth-800">Subtotal:</span>
+                                <span className="text-sm font-semibold text-earth-800">${order.subtotal.toFixed(2)}</span>
+                              </div>
+                              {order.tax > 0 && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-earth-600">Tax:</span>
+                                  <span className="text-xs text-earth-600">${order.tax.toFixed(2)}</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between items-center font-bold">
+                                <span className="text-sm text-earth-800">Total:</span>
+                                <span className="text-sm text-earth-800">${order.total.toFixed(2)}</span>
+                              </div>
+                                                         </div>
+                           </div>
+                         ) : (
+                           <div className="text-xs text-earth-500">
+                             <p className="italic">No structured item details available</p>
+                             {/* Fallback: try to parse from special_instructions if items are missing */}
+                             {order.special_instructions && (
+                               <div className="mt-2 p-2 bg-yellow-50 rounded">
+                                 <p className="font-medium">Raw order data:</p>
+                                 <pre className="whitespace-pre-wrap text-xs">{order.special_instructions}</pre>
+                               </div>
+                             )}
+                           </div>
+                         );
+                        })()}
+                       </div>
+                      
                       {order.special_instructions && (
-                        <div className="mt-2 p-2 bg-earth-50 rounded text-sm text-earth-600">
-                          <strong>📝 Order Details:</strong>
-                          <pre className="whitespace-pre-wrap font-sans text-xs mt-1">{order.special_instructions}</pre>
+                        <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-earth-600">
+                          <strong>📝 Special Instructions:</strong>
+                          <p className="text-xs mt-1 whitespace-pre-wrap">{order.special_instructions}</p>
                         </div>
                       )}
                     </div>
