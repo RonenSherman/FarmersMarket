@@ -5,8 +5,14 @@ export interface Vendor {
   contact_phone: string;
   product_type: ProductType;
   api_consent: boolean;
-  payment_method: 'square' | 'swipe';
+  payment_method: 'square' | 'swipe' | 'cash' | 'card' | 'both' | 'oauth' | null;
   available_dates: string[];
+  payment_provider?: 'square' | 'stripe';
+  payment_connected: boolean;
+  payment_connection_id?: string;
+  payment_account_id?: string;
+  payment_connected_at?: string;
+  payment_last_verified?: string;
   created_at: string;
   updated_at: string;
 }
@@ -139,4 +145,50 @@ export interface MarketStatus {
   nextMarketDate: string | null;
   currentMarketEndTime: string | null;
   activeVendors: Vendor[];
+}
+
+export interface PaymentConnection {
+  id: string;
+  vendor_id: string;
+  provider: 'square' | 'stripe';
+  provider_account_id: string;
+  access_token_hash: string;
+  refresh_token_hash?: string;
+  token_expires_at?: string;
+  scopes: string[];
+  webhook_endpoint_id?: string;
+  connection_status: 'active' | 'expired' | 'revoked' | 'error';
+  last_used_at?: string;
+  metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  order_id: string;
+  vendor_id: string;
+  provider: 'square' | 'stripe';
+  provider_transaction_id: string;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'processing' | 'succeeded' | 'failed' | 'cancelled' | 'refunded';
+  payment_method_type?: string;
+  failure_reason?: string;
+  provider_fee?: number;
+  net_amount?: number;
+  processed_at?: string;
+  refunded_at?: string;
+  refund_amount?: number;
+  metadata: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentOAuthConfig {
+  provider: 'square' | 'stripe';
+  client_id: string;
+  redirect_uri: string;
+  scopes: string[];
+  state: string;
 } 

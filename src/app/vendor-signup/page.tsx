@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
 import { vendorService } from '@/lib/database';
+import { PaymentOAuthService } from '@/lib/paymentOAuth';
 import { PRODUCT_TYPE_OPTIONS } from '@/lib/utils';
-import { ProductType } from '@/types';
+import { ProductType, PaymentConnection } from '@/types';
+import { CreditCardIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 interface VendorFormData {
   name: string;
@@ -13,15 +15,18 @@ interface VendorFormData {
   contact_phone: string;
   product_type: ProductType;
   api_consent: boolean;
-  payment_method: 'square' | 'swipe';
   available_dates: string[];
 }
 
 export default function VendorSignupPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [selectedProvider, setSelectedProvider] = useState<'square' | 'stripe' | null>(null);
+  const [paymentConnection, setPaymentConnection] = useState<PaymentConnection | null>(null);
+  const [tempVendorId, setTempVendorId] = useState<string | null>(null);
+  const [step, setStep] = useState<'form' | 'payment' | 'complete'>('form');
   
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<VendorFormData>();
+  const { register, handleSubmit, formState: { errors }, reset, getValues } = useForm<VendorFormData>();
 
   // Generate next 12 Thursdays for date selection
   const generateThursdayDates = () => {
@@ -56,7 +61,7 @@ export default function VendorSignupPage() {
     );
   };
 
-  const onSubmit = async (data: VendorFormData) => {
+  const onSubmitBasicInfo = async (data: VendorFormData) => {
     if (selectedDates.length === 0) {
       toast.error('Please select at least one market date');
       return;
@@ -68,28 +73,21 @@ export default function VendorSignupPage() {
       const vendorData = {
         ...data,
         available_dates: selectedDates,
+        payment_method: null, // Using new OAuth payment system
+        payment_connected: false
       };
 
-      // Use the database service
+      // Create vendor record first
       const newVendor = await vendorService.create(vendorData);
-
-      toast.success(`Vendor application submitted successfully! Application ID: ${newVendor.id.slice(0, 8)}...`);
-      reset();
-      setSelectedDates([]);
+      setTempVendorId(newVendor.id);
       
-      // Show success details
-      setTimeout(() => {
-        toast.success('You will receive an email confirmation within 24 hours.', {
-          duration: 6000,
-        });
-      }, 2000);
-
+      toast.success('Basic information saved! Now connect your payment account.');
+      setStep('payment');
+      
     } catch (error) {
       console.error('Error submitting vendor application:', error);
       
-      // Show user-friendly error message
       if (error && typeof error === 'object') {
-        // Handle PostgreSQL duplicate key error
         if ('code' in error && error.code === '23505') {
           if ('details' in error && typeof error.details === 'string' && error.details.includes('contact_email')) {
             toast.error('An account with this email already exists. Please use a different email address.');
@@ -113,6 +111,254 @@ export default function VendorSignupPage() {
     }
   };
 
+  const handlePaymentConnect = async (provider: 'square' | 'stripe') => {
+    if (!tempVendorId) {
+      toast.error('Please complete the basic information first.');
+      return;
+    }
+
+    setSelectedProvider(provider);
+    
+    try {
+      // Validate configuration first
+      const configResponse = await fetch('/api/oauth/config');
+      const config = await configResponse.json();
+      
+      if (!config.validation.valid) {
+        console.error('OAuth configuration errors:', config.validation.errors);
+        toast.error(`Configuration error: ${config.validation.errors.join(', ')}`);
+        setSelectedProvider(null);
+        return;
+      }
+
+      // Generate OAuth URL and redirect
+      const authUrl = PaymentOAuthService.generateAuthUrl(provider, tempVendorId);
+      console.log(`Redirecting to ${provider} OAuth:`, authUrl);
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error('Error initiating OAuth flow:', error);
+      toast.error(`Failed to connect ${provider} account: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setSelectedProvider(null);
+    }
+  };
+
+
+
+  const handleSkipPayment = () => {
+    toast.success('Application submitted! You can connect your payment account later from the vendor portal.');
+    setStep('complete');
+    reset();
+    setSelectedDates([]);
+    setTempVendorId(null);
+  };
+
+  // Check for OAuth callback parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    const error = urlParams.get('error');
+
+    if (error) {
+      toast.error(`Payment connection failed: ${error}`);
+      return;
+    }
+
+    if (code && state) {
+      handleOAuthCallback(code, state);
+    }
+  }, []);
+
+  const handleOAuthCallback = async (code: string, state: string) => {
+    try {
+      const stateData = PaymentOAuthService.parseState(state);
+      if (!stateData) {
+        throw new Error('Invalid OAuth state');
+      }
+
+      const { vendorId, provider } = stateData;
+      setTempVendorId(vendorId);
+
+      let connection: PaymentConnection;
+      if (provider === 'square') {
+        connection = await PaymentOAuthService.exchangeSquareCode(code, vendorId);
+      } else {
+        connection = await PaymentOAuthService.exchangeStripeCode(code, vendorId);
+      }
+
+      setPaymentConnection(connection);
+      setStep('complete');
+      toast.success(`${provider === 'square' ? 'Square' : 'Stripe'} account connected successfully!`);
+      
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+      
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      toast.error('Failed to complete payment connection. Please try again.');
+    }
+  };
+
+  if (step === 'complete') {
+    return (
+      <div className="min-h-screen bg-earth-50 py-12">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-earth-800 mb-4">
+              Application Submitted Successfully!
+            </h1>
+            <p className="text-lg text-earth-600 mb-6">
+              Thank you for applying to become a vendor at the Duvall Farmers Market.
+            </p>
+            
+            {paymentConnection ? (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                <div className="flex items-center justify-center mb-2">
+                  <CheckCircleIcon className="h-5 w-5 text-green-500 mr-2" />
+                  <span className="text-green-800 font-medium">
+                    {paymentConnection.provider === 'square' ? 'Square' : 'Stripe'} account connected
+                  </span>
+                </div>
+                <p className="text-green-700 text-sm">
+                  You're all set to receive payments when your application is approved.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <div className="flex items-center justify-center mb-2">
+                  <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500 mr-2" />
+                  <span className="text-yellow-800 font-medium">
+                    Payment account not connected
+                  </span>
+                </div>
+                <p className="text-yellow-700 text-sm">
+                  You can connect your payment account later from the vendor portal.
+                </p>
+              </div>
+            )}
+
+            <div className="bg-earth-50 rounded-lg p-6 mb-6">
+              <h3 className="font-semibold text-earth-800 mb-3">What happens next?</h3>
+              <ul className="text-sm text-earth-600 space-y-2 text-left">
+                <li>• Your application will be reviewed within 2-3 business days</li>
+                <li>• You'll receive an email confirmation with your application status</li>
+                <li>• Market coordinators will contact you to discuss setup details</li>
+                <li>• Once approved, you'll gain access to the vendor portal</li>
+                <li>• You can then add products and manage your market presence</li>
+              </ul>
+            </div>
+
+            <button
+              onClick={() => {
+                setStep('form');
+                setPaymentConnection(null);
+                setTempVendorId(null);
+              }}
+              className="btn-primary"
+            >
+              Submit Another Application
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'payment') {
+    return (
+      <div className="min-h-screen bg-earth-50 py-12">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-lg shadow-lg p-8">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-earth-800 mb-4">
+                Connect Your Payment Account
+              </h1>
+              <p className="text-lg text-earth-600">
+                Connect your Square or Stripe account to receive payments from customers
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              {/* Square Option */}
+              <div className="border-2 border-earth-200 rounded-lg p-6 hover:border-market-300 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center mb-3">
+                      <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mr-4">
+                        <span className="text-white font-bold text-lg">□</span>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-semibold text-earth-800">Square</h3>
+                        <p className="text-earth-600">Connect your Square merchant account</p>
+                      </div>
+                    </div>
+                    <ul className="text-sm text-earth-600 space-y-1 mb-4">
+                      <li>• Accept all major credit and debit cards</li>
+                      <li>• 2.6% + 10¢ per transaction</li>
+                      <li>• Next-day deposits</li>
+                      <li>• Built-in fraud protection</li>
+                    </ul>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handlePaymentConnect('square')}
+                  className="w-full btn-primary"
+                  disabled={selectedProvider === 'square'}
+                >
+                  {selectedProvider === 'square' ? 'Connecting...' : 'Connect Square Account'}
+                </button>
+              </div>
+
+              {/* Stripe Option */}
+              <div className="border-2 border-earth-200 rounded-lg p-6 hover:border-market-300 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center mb-3">
+                      <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mr-4">
+                        <span className="text-white font-bold text-lg">S</span>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-semibold text-earth-800">Stripe</h3>
+                        <p className="text-earth-600">Connect your Stripe account</p>
+                      </div>
+                    </div>
+                    <ul className="text-sm text-earth-600 space-y-1 mb-4">
+                      <li>• Accept cards, Apple Pay, Google Pay</li>
+                      <li>• 2.9% + 30¢ per transaction</li>
+                      <li>• 2-day deposits</li>
+                      <li>• Advanced analytics and reporting</li>
+                    </ul>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handlePaymentConnect('stripe')}
+                  className="w-full btn-secondary"
+                  disabled={selectedProvider === 'stripe'}
+                >
+                  {selectedProvider === 'stripe' ? 'Connecting...' : 'Connect Stripe Account'}
+                </button>
+              </div>
+
+              {/* Skip Option */}
+              <div className="text-center pt-6 border-t border-earth-200">
+                <p className="text-earth-600 mb-4">
+                  Don't have a payment account yet? You can connect one later.
+                </p>
+                <button
+                  onClick={handleSkipPayment}
+                  className="text-earth-500 hover:text-earth-700 underline"
+                >
+                  Skip for now and complete later
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-earth-50 py-12">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -126,7 +372,7 @@ export default function VendorSignupPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmitBasicInfo)} className="space-y-6">
             {/* Basic Information */}
             <div className="grid md:grid-cols-2 gap-6">
               <div>
@@ -208,37 +454,24 @@ export default function VendorSignupPage() {
               </div>
             </div>
 
-            {/* Card Reader System */}
-            <div>
-              <label className="block text-sm font-medium text-earth-700 mb-2">
-                Card Reader System *
-              </label>
-              <p className="text-sm text-earth-600 mb-3">
-                All payments are processed online with card only. Please select your preferred card reader system for order fulfillment verification.
-              </p>
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    value="square"
-                    {...register('payment_method', { required: 'Card reader system is required' })}
-                    className="mr-2"
-                  />
-                  Square (Square Terminal, Square Reader)
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    value="swipe"
-                    {...register('payment_method', { required: 'Card reader system is required' })}
-                    className="mr-2"
-                  />
-                  Swipe (Stripe Terminal, other systems)
-                </label>
+            {/* Payment Integration Notice */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <CreditCardIcon className="h-6 w-6 text-blue-600 mr-3 mt-1" />
+                <div>
+                  <h3 className="font-semibold text-blue-800 mb-2">Modern Payment Processing</h3>
+                  <p className="text-blue-700 text-sm mb-2">
+                    All customer payments are processed online through secure, integrated payment systems. 
+                    After submitting your basic information, you'll connect your Square or Stripe merchant account.
+                  </p>
+                  <ul className="text-blue-700 text-sm space-y-1">
+                    <li>• Secure OAuth integration with your payment provider</li>
+                    <li>• Automatic order notifications and payment processing</li>
+                    <li>• Real-time transaction tracking and reporting</li>
+                    <li>• No manual payment handling required</li>
+                  </ul>
+                </div>
               </div>
-              {errors.payment_method && (
-                <p className="text-red-600 text-sm mt-1">{errors.payment_method.message}</p>
-              )}
             </div>
 
             {/* API Consent */}
@@ -250,8 +483,9 @@ export default function VendorSignupPage() {
                   className="mr-3 mt-1"
                 />
                 <span className="text-sm text-earth-700">
-                  I consent to integrate my payment processing system (card reader/POS) with the market's API 
-                  for seamless order processing and payment verification. *
+                  I consent to integrate my payment processing system with the market's platform 
+                  for seamless order processing and payment verification. This enables automatic 
+                  order notifications and secure payment handling. *
                 </span>
               </label>
               {errors.api_consent && (
@@ -312,22 +546,11 @@ export default function VendorSignupPage() {
                     Submitting...
                   </span>
                 ) : (
-                  'Submit Vendor Application'
+                  'Continue to Payment Setup'
                 )}
               </button>
             </div>
           </form>
-
-          <div className="mt-8 p-4 bg-earth-50 rounded-lg">
-            <h3 className="font-semibold text-earth-800 mb-2">What happens next?</h3>
-            <ul className="text-sm text-earth-600 space-y-1">
-              <li>• Your application is stored securely in our database</li>
-              <li>• We'll review your application within 2-3 business days</li>
-              <li>• You'll receive an email confirmation with next steps</li>
-              <li>• Market coordinators will contact you to discuss setup details</li>
-              <li>• You'll gain access to the vendor portal to manage your products</li>
-            </ul>
-          </div>
         </div>
       </div>
     </div>
