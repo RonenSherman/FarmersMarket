@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
         client_secret: process.env.SQUARE_CLIENT_SECRET,
         code: code,
         grant_type: 'authorization_code',
+        redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/oauth/square/callback`,
       }),
     });
 
