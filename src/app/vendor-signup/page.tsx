@@ -147,12 +147,19 @@ export default function VendorSignupPage() {
   const handleSkipPayment = async () => {
     if (tempVendorId) {
       try {
-        // Send welcome email for vendor who skipped payment setup
-        await fetch('/api/send-vendor-welcome', {
+        console.log('Sending welcome email for vendor (skip payment):', tempVendorId);
+        const emailResponse = await fetch('/api/send-vendor-welcome', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ vendorId: tempVendorId })
         });
+        
+        const emailResult = await emailResponse.json();
+        console.log('Welcome email result (skip payment):', emailResult);
+        
+        if (!emailResult.success) {
+          console.error('Failed to send welcome email:', emailResult.message);
+        }
       } catch (error) {
         console.error('Failed to send welcome email:', error);
         // Don't block the user flow if email fails
@@ -201,6 +208,27 @@ export default function VendorSignupPage() {
       }
 
       setPaymentConnection(connection);
+      
+      // Send welcome email after successful OAuth connection
+      try {
+        console.log('Sending welcome email for vendor:', vendorId);
+        const emailResponse = await fetch('/api/send-vendor-welcome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vendorId })
+        });
+        
+        const emailResult = await emailResponse.json();
+        console.log('Welcome email result:', emailResult);
+        
+        if (!emailResult.success) {
+          console.error('Failed to send welcome email:', emailResult.message);
+        }
+      } catch (emailError) {
+        console.error('Error sending welcome email:', emailError);
+        // Don't block the user flow if email fails
+      }
+      
       setStep('complete');
       toast.success(`${provider === 'square' ? 'Square' : 'Stripe'} account connected successfully!`);
       

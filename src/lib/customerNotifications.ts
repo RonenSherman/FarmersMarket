@@ -302,10 +302,12 @@ class CustomerNotificationService {
     payment_provider?: string;
     payment_connected?: boolean;
   }): Promise<boolean> {
-    console.log('📧 Sending vendor welcome email');
+    console.log('📧 CustomerNotificationService: Sending vendor welcome email');
     console.log('📧 Vendor:', vendor.business_name);
     console.log('📧 Email:', vendor.contact_email);
     console.log('📧 Payment provider:', vendor.payment_provider);
+    console.log('📧 API Key configured:', !!this.apiKey);
+    console.log('📧 From email:', this.fromEmail);
     
     const template = this.createVendorWelcomeTemplate(vendor);
     

@@ -3,9 +3,12 @@ import { customerNotificationService } from '@/lib/customerNotifications';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('📧 Vendor welcome email API called');
     const { vendorId } = await request.json();
+    console.log('📧 Vendor ID:', vendorId);
 
     if (!vendorId) {
+      console.log('❌ No vendor ID provided');
       return NextResponse.json(
         { error: 'Vendor ID is required' },
         { status: 400 }
@@ -19,6 +22,7 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    console.log('📧 Fetching vendor from database...');
     const { data: vendor, error } = await supabase
       .from('vendors')
       .select('business_name, contact_email, payment_provider, payment_connected')
@@ -26,14 +30,17 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error || !vendor) {
-      console.error('Failed to fetch vendor:', error);
+      console.error('❌ Failed to fetch vendor:', error);
       return NextResponse.json(
         { error: 'Vendor not found' },
         { status: 404 }
       );
     }
 
+    console.log('📧 Vendor found:', vendor.business_name, vendor.contact_email);
+
     // Send welcome email
+    console.log('📧 Sending welcome email...');
     const emailSent = await customerNotificationService.sendVendorWelcomeEmail({
       business_name: vendor.business_name,
       contact_email: vendor.contact_email,
@@ -41,6 +48,7 @@ export async function POST(request: NextRequest) {
       payment_connected: vendor.payment_connected
     });
 
+    console.log('📧 Email sent result:', emailSent);
     return NextResponse.json({
       success: emailSent,
       message: emailSent ? 'Welcome email sent successfully' : 'Failed to send welcome email'
