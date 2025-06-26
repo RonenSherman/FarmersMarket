@@ -271,7 +271,8 @@ export const marketDateService = {
 
   // Get today's market (if exists)
   async getToday() {
-    const today = new Date().toISOString().split('T')[0];
+    // Use local date instead of UTC to avoid timezone issues
+    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD format
     const { data, error } = await supabase
       .from(TABLES.MARKET_DATES)
       .select('*')
