@@ -123,9 +123,15 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (connectionError) {
-      console.error('Database error:', connectionError);
+      console.error('Database error storing payment connection:', {
+        error: connectionError,
+        code: connectionError.code,
+        message: connectionError.message,
+        details: connectionError.details,
+        hint: connectionError.hint
+      });
       return NextResponse.json(
-        { error: 'Failed to store connection' },
+        { error: `Failed to store connection: ${connectionError.message}` },
         { status: 500 }
       );
     }
@@ -145,9 +151,15 @@ export async function POST(request: NextRequest) {
       .eq('id', vendorId);
 
     if (vendorError) {
-      console.error('Vendor update error:', vendorError);
+      console.error('Database error updating vendor:', {
+        error: vendorError,
+        code: vendorError.code,
+        message: vendorError.message,
+        details: vendorError.details,
+        hint: vendorError.hint
+      });
       return NextResponse.json(
-        { error: 'Failed to update vendor' },
+        { error: `Failed to update vendor: ${vendorError.message}` },
         { status: 500 }
       );
     }
