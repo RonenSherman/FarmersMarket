@@ -7,6 +7,13 @@ export async function POST(request: NextRequest) {
     const { vendorId } = await request.json();
     console.log('📧 Vendor ID:', vendorId);
 
+    // Check environment variables
+    console.log('📧 Environment check:');
+    console.log('📧 SENDGRID_API_KEY exists:', !!process.env.SENDGRID_API_KEY);
+    console.log('📧 SENDGRID_FROM_EMAIL:', process.env.SENDGRID_FROM_EMAIL);
+    console.log('📧 NEXT_PUBLIC_SUPABASE_URL exists:', !!process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('📧 SUPABASE_SERVICE_ROLE_KEY exists:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+
     if (!vendorId) {
       console.log('❌ No vendor ID provided');
       return NextResponse.json(
@@ -49,13 +56,20 @@ export async function POST(request: NextRequest) {
     });
 
     console.log('📧 Email sent result:', emailSent);
+    
+    if (emailSent) {
+      console.log('✅ Welcome email API - SUCCESS');
+    } else {
+      console.log('❌ Welcome email API - FAILED');
+    }
+    
     return NextResponse.json({
       success: emailSent,
       message: emailSent ? 'Welcome email sent successfully' : 'Failed to send welcome email'
     });
 
   } catch (error) {
-    console.error('Error sending vendor welcome email:', error);
+    console.error('❌ Error sending vendor welcome email:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
