@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     console.log('📧 Fetching vendor from database...');
     const { data: vendor, error } = await supabase
       .from('vendors')
-      .select('business_name, contact_email, payment_provider, payment_connected')
+      .select('name, contact_email, payment_method')
       .eq('id', vendorId)
       .single();
 
@@ -37,15 +37,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('📧 Vendor found:', vendor.business_name, vendor.contact_email);
+    console.log('📧 Vendor found:', vendor.name, vendor.contact_email);
 
     // Send welcome email
     console.log('📧 Sending welcome email...');
     const emailSent = await customerNotificationService.sendVendorWelcomeEmail({
-      business_name: vendor.business_name,
+      business_name: vendor.name,
       contact_email: vendor.contact_email,
-      payment_provider: vendor.payment_provider,
-      payment_connected: vendor.payment_connected
+      payment_provider: vendor.payment_method,
+      payment_connected: vendor.payment_method !== null
     });
 
     console.log('📧 Email sent result:', emailSent);

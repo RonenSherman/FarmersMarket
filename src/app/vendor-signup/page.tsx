@@ -81,7 +81,30 @@ export default function VendorSignupPage() {
       const newVendor = await vendorService.create(vendorData);
       setTempVendorId(newVendor.id);
       
-      toast.success('Basic information saved! Now connect your payment account.');
+      // Send welcome email immediately after vendor creation
+      try {
+        console.log('Sending welcome email for new vendor:', newVendor.id);
+        const emailResponse = await fetch('/api/send-vendor-welcome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vendorId: newVendor.id })
+        });
+        
+        const emailResult = await emailResponse.json();
+        console.log('Welcome email result (after signup):', emailResult);
+        
+        if (emailResult.success) {
+          console.log('✅ Welcome email sent successfully');
+          toast.success('Basic information saved! Check your email for confirmation. Now connect your payment account.');
+        } else {
+          console.error('❌ Failed to send welcome email:', emailResult.message);
+          toast.success('Basic information saved! Now connect your payment account.');
+        }
+      } catch (emailError) {
+        console.error('❌ Error sending welcome email:', emailError);
+        toast.success('Basic information saved! Now connect your payment account.');
+      }
+      
       setStep('payment');
       
     } catch (error) {
