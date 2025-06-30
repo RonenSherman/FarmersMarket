@@ -301,7 +301,7 @@ export default function AdminPage() {
   const handleUpdateOrderStatus = async (orderId: string, order_status: Order['order_status']) => {
     // Confirmation for cancellation
     if (order_status === 'cancelled') {
-      if (!confirm('Are you sure you want to cancel this order? The customer will be notified.')) {
+      if (!confirm('Are you sure you want to cancel this order? The customer will be notified via email.')) {
         return;
       }
     }
@@ -311,16 +311,20 @@ export default function AdminPage() {
       
       // Find the updated order to send notification
       const updatedOrder = state.orders.find(order => order.id === orderId);
-      if (updatedOrder && updatedOrder.notification_method) {
+      if (updatedOrder) {
+        // Update the order status locally for email notification
+        const orderWithUpdatedStatus = { ...updatedOrder, order_status };
+        
         try {
-          console.log('📧 Admin sending email notification to:', updatedOrder.customer_email);
+          console.log('📧 Admin sending status update email to:', updatedOrder.customer_email);
+          console.log('📧 New status:', order_status);
           
           const notificationResponse = await fetch('/api/send-notification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              order: updatedOrder,
-              notificationMethod: updatedOrder.notification_method,
+              order: orderWithUpdatedStatus,
+              notificationMethod: updatedOrder.notification_method || 'email',
               type: 'status_update'
             })
           });
@@ -328,44 +332,20 @@ export default function AdminPage() {
           const notificationResult = await notificationResponse.json();
           
           if (notificationResult.success) {
-            toast.success('Order status updated and customer notified via email');
+            if (order_status === 'cancelled') {
+              toast.success('Order cancelled and customer notified via email');
+            } else {
+              toast.success(`Order status updated to "${order_status}" and customer notified via email`);
+            }
           } else {
-            toast.success('Order status updated! (Email notification simulated - check console)');
+            toast.success(`Order status updated to "${order_status}"! (Email notification in simulation mode)`);
           }
         } catch (error) {
           console.error('Failed to send customer notification:', error);
-          toast.success('Order status updated (notification failed)');
+          toast.success(`Order status updated to "${order_status}" (notification failed)`);
         }
       } else {
-        // Fallback to email notification if notification_method not set
-        if (updatedOrder) {
-          try {
-            console.log('📧 Admin sending email notification to:', updatedOrder.customer_email);
-            
-            const notificationResponse = await fetch('/api/send-notification', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                order: updatedOrder,
-                notificationMethod: 'email', // Default to email
-                type: 'status_update'
-              })
-            });
-            
-            const notificationResult = await notificationResponse.json();
-            
-            if (notificationResult.success) {
-              toast.success('Order status updated and customer notified via email');
-            } else {
-              toast.success('Order status updated! (Email notification simulated - check console)');
-            }
-          } catch (error) {
-            console.error('Failed to send customer notification:', error);
-            toast.success('Order status updated successfully');
-          }
-        } else {
-          toast.success('Order status updated successfully');
-        }
+        toast.success(`Order status updated to "${order_status}"`);
       }
       
       loadAdminData();

@@ -227,4 +227,32 @@ For questions or support, please contact:
 
 - Built for the Duvall community
 - Inspired by local farmers markets and sustainable agriculture
-- Designed with accessibility and user experience in mind 
+- Designed with accessibility and user experience in mind
+
+## 📧 **Enhanced Email Notification System**
+
+### **Order Status Updates**
+The system now automatically sends email notifications when:
+- ✅ Order is confirmed by vendor
+- 📦 Order is ready for pickup  
+- 🎉 Order is completed
+- ❌ Order is cancelled
+
+### **Cancellation System** 
+- 🚫 **Self-Service Cancellation**: Customers can cancel orders via email links
+- ⏰ **Time-Limited**: Cancellation only available for pending/confirmed orders
+- 🔐 **Secure Tokens**: Each cancellation link has a unique 24-hour token
+- 📬 **Auto-Notifications**: Cancellations trigger status update emails
+
+### **Email Features**
+- 🎨 **Professional HTML Templates** with market branding
+- 📱 **Mobile-Responsive Design** 
+- 🔗 **One-Click Cancellation** with prominent buttons
+- 📊 **Order Tracking** with status-specific messages
+- 🎯 **Smart Logic**: Cancellation links only show for cancellable orders
+
+### **Admin Experience**
+- 🎛️ **One-Click Status Updates** with automatic email notifications
+- 💬 **Clear Feedback Messages** showing email delivery status
+- ⚠️ **Confirmation Dialogs** for destructive actions (cancellations)
+- 📧 **Email Simulation Mode** for testing without SendGrid 

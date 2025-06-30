@@ -111,7 +111,9 @@ class CustomerNotificationService {
       'cancelled': 'Your order has been cancelled.'
     };
 
-    const cancellationLink = data.cancellationToken ? 
+    // Show cancellation link only for orders that can be cancelled
+    const canBeCancelled = data.status === 'pending' || data.status === 'confirmed';
+    const cancellationLink = data.cancellationToken && canBeCancelled ? 
       `\n\n🚫 Need to cancel? <a href="${this.baseUrl}/cancel-order/${data.orderId}?token=${data.cancellationToken}" style="color: #dc2626; text-decoration: underline;">Click here to cancel your order</a>` : '';
 
     const subject = `${statusEmojis[status]} Order ${orderNumber} - ${status.charAt(0).toUpperCase() + status.slice(1)}`;
@@ -145,7 +147,14 @@ class CustomerNotificationService {
             <div style="color: #6b7280; white-space: pre-line;">${items}</div>
           </div>
           
-          ${cancellationLink ? `<div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 20px; text-align: center;">${cancellationLink}</div>` : ''}
+          ${cancellationLink ? `<div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 20px; text-align: center; background: #fef2f2; border-radius: 8px; padding: 20px;">
+            <h4 style="margin: 0 0 10px; color: #dc2626;">Need to Cancel?</h4>
+            <p style="margin: 0 0 15px; color: #7f1d1d; font-size: 14px;">You can cancel this order anytime before it's marked as ready for pickup.</p>
+            <a href="${this.baseUrl}/cancel-order/${data.orderId}?token=${data.cancellationToken}" 
+               style="background: #dc2626; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+              🚫 Cancel Order
+            </a>
+          </div>` : ''}
         </div>
         
         <div style="background: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border: 1px solid #e5e7eb; border-top: none;">
@@ -174,7 +183,7 @@ class CustomerNotificationService {
       Order Items:
       ${items}
       
-      ${data.cancellationToken ? `Need to cancel? Visit: ${this.baseUrl}/cancel-order/${data.orderId}?token=${data.cancellationToken}` : ''}
+      ${data.cancellationToken && canBeCancelled ? `Need to cancel? Visit: ${this.baseUrl}/cancel-order/${data.orderId}?token=${data.cancellationToken}` : ''}
       
       Duvall Farmers Market
       Saturdays 9:00 AM - 2:00 PM
@@ -292,7 +301,9 @@ class CustomerNotificationService {
     order: Order & { vendors: Vendor },
     notificationMethod: NotificationMethod
   ): Promise<boolean> {
-    return this.sendOrderNotification(order, notificationMethod, false);
+    // Include cancellation token for orders that can still be cancelled
+    const canBeCancelled = order.order_status === 'pending' || order.order_status === 'confirmed';
+    return this.sendOrderNotification(order, notificationMethod, canBeCancelled);
   }
 
   // Send vendor welcome email
