@@ -16,6 +16,18 @@
   "env": {
     "NEXT_PUBLIC_MARKET_NAME": "Duvall Farmers Market",
     "NEXT_PUBLIC_MARKET_DAY": "thursday",
-    "NEXT_PUBLIC_MARKET_END_TIME": "18:30"
-  }
+    "NEXT_PUBLIC_MARKET_END_TIME": "18:30",
+    "NEXT_PUBLIC_BASE_URL": "https://farmers-market-3ct4.vercel.app"
+  },
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    }
+  ]
 } 

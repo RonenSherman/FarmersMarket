@@ -20,54 +20,88 @@ export default function CancelOrderPage() {
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [tokenValid, setTokenValid] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   useEffect(() => {
+    console.log('📧 Cancel order page loaded');
+    console.log('📧 Order ID:', orderId);
+    console.log('📧 Token:', token ? 'Present' : 'Missing');
+    console.log('📧 Current URL:', window.location.href);
     loadOrderAndValidateToken();
   }, [orderId, token]);
 
   const loadOrderAndValidateToken = async () => {
     if (!token) {
+      setErrorMessage('Invalid cancellation link - no token provided');
+      toast.error('Invalid cancellation link');
+      setLoading(false);
+      return;
+    }
+
+    if (!orderId) {
+      setErrorMessage('Invalid cancellation link - no order ID provided');
       toast.error('Invalid cancellation link');
       setLoading(false);
       return;
     }
 
     try {
+      console.log('🔐 Validating cancellation token...');
+      
       // Validate token
       const isValid = await customerNotificationService.verifyCancellationToken(orderId, token);
+      console.log('🔐 Token validation result:', isValid);
+      
       if (!isValid) {
+        setErrorMessage('Invalid or expired cancellation link');
         toast.error('Invalid or expired cancellation link');
         setLoading(false);
         return;
       }
 
       setTokenValid(true);
+      console.log('✅ Token validated successfully');
 
       // Load order details
+      console.log('📦 Loading order details...');
       const orders = await orderService.getAll();
       const foundOrder = orders.find(o => o.id === orderId);
       
       if (!foundOrder) {
+        setErrorMessage('Order not found in database');
         toast.error('Order not found');
         setLoading(false);
         return;
       }
 
+      console.log('📦 Order found:', foundOrder.order_number, foundOrder.order_status);
+
       if (foundOrder.order_status === 'cancelled') {
-        toast.error('Order is already cancelled');
+        setErrorMessage('Order is already cancelled');
+        setOrder(foundOrder); // Set order so UI can show cancelled state
         setLoading(false);
         return;
       }
 
       if (foundOrder.order_status === 'completed') {
+        setErrorMessage('Cannot cancel completed order');
         toast.error('Cannot cancel completed order');
         setLoading(false);
         return;
       }
 
+      if (foundOrder.order_status === 'ready') {
+        setErrorMessage('Cannot cancel order that is ready for pickup');
+        toast.error('Cannot cancel order that is ready for pickup');
+        setLoading(false);
+        return;
+      }
+
       setOrder(foundOrder);
+      console.log('✅ Order loaded successfully');
     } catch (error) {
-      console.error('Error loading order:', error);
+      console.error('❌ Error loading order:', error);
+      setErrorMessage(`Failed to load order details: ${error}`);
       toast.error('Failed to load order details');
     } finally {
       setLoading(false);

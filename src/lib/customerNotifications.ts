@@ -31,7 +31,7 @@ class CustomerNotificationService {
   private static instance: CustomerNotificationService;
   private apiKey: string = process.env.SENDGRID_API_KEY || '';
   private fromEmail: string = process.env.SENDGRID_FROM_EMAIL || 'orders@duvallfarmersmarket.org';
-  private baseUrl: string = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  private baseUrl: string = process.env.NEXT_PUBLIC_BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://farmers-market-3ct4.vercel.app');
 
   static getInstance(): CustomerNotificationService {
     if (!CustomerNotificationService.instance) {
@@ -48,6 +48,9 @@ class CustomerNotificationService {
   // Store cancellation token (server-side)
   private async storeCancellationToken(orderId: string, token: string): Promise<void> {
     try {
+      console.log('🔐 Storing cancellation token for order:', orderId);
+      console.log('🔗 Cancellation URL will be:', `${this.baseUrl}/cancel-order/${orderId}?token=${token}`);
+      
       const response = await fetch('/api/verify-cancellation-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -60,6 +63,8 @@ class CustomerNotificationService {
       
       if (!response.ok) {
         console.error('Failed to store cancellation token');
+      } else {
+        console.log('✅ Cancellation token stored successfully');
       }
     } catch (error) {
       console.error('Error storing cancellation token:', error);
