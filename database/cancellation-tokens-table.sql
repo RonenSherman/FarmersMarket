@@ -18,10 +18,10 @@ CREATE INDEX IF NOT EXISTS idx_cancellation_tokens_order_id ON cancellation_toke
 CREATE INDEX IF NOT EXISTS idx_cancellation_tokens_token ON cancellation_tokens(token);
 CREATE INDEX IF NOT EXISTS idx_cancellation_tokens_expires ON cancellation_tokens(expires_at);
 
--- Create unique constraint on active tokens per order
+-- Create unique constraint on active tokens per order (without NOW() function)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_cancellation_tokens_order_active 
 ON cancellation_tokens(order_id) 
-WHERE is_used = FALSE AND expires_at > NOW();
+WHERE is_used = FALSE;
 
 -- Function to clean up expired tokens (optional, for maintenance)
 CREATE OR REPLACE FUNCTION cleanup_expired_cancellation_tokens()
