@@ -13,6 +13,7 @@ interface MarketStore {
   setVendors: (vendors: Vendor[]) => void;
   setProducts: (products: Product[]) => void;
   updateProductStock: (productId: string, newStock: number) => void;
+  refreshProducts: () => Promise<void>;
   getAvailableStock: (productId: string) => number;
   
   // Cart management
@@ -51,6 +52,18 @@ export const useMarketStore = create<MarketStore>()(
             : product
         );
         set({ products: updatedProducts });
+      },
+
+      refreshProducts: async () => {
+        try {
+          console.log('🔄 Refreshing product data from database...');
+          const { productService } = await import('@/lib/database');
+          const freshProducts = await productService.getAll();
+          console.log('✅ Products refreshed from database');
+          set({ products: freshProducts });
+        } catch (error) {
+          console.error('❌ Failed to refresh products:', error);
+        }
       },
       
       carts: [],

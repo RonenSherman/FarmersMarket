@@ -6,6 +6,7 @@ import { vendorService, productService, marketDateService, orderService } from '
 import CameraUpload from '@/components/CameraUpload';
 import { notificationService } from '@/lib/notifications';
 import { customerNotificationService } from '@/lib/customerNotifications';
+import { useMarketStore } from '@/store/marketStore';
 import type { Vendor, Product, MarketDate, Order, PricingUnit } from '@/types';
 import { PRICING_UNIT_LABELS } from '@/types';
 
@@ -22,6 +23,7 @@ interface AdminState {
 }
 
 export default function AdminPage() {
+  const { refreshProducts } = useMarketStore();
   const [password, setPassword] = useState('');
   const [state, setState] = useState<AdminState>({
     isAuthenticated: false,
@@ -319,6 +321,9 @@ export default function AdminPage() {
       // Check if this is a pending → confirmed transition (reduce inventory)
       const isConfirmingPendingOrder = order.order_status === 'pending' && order_status === 'confirmed';
       
+      // Check if this is a confirmed → cancelled transition (restore inventory)
+      const isCancellingConfirmedOrder = order.order_status === 'confirmed' && order_status === 'cancelled';
+      
       if (isConfirmingPendingOrder) {
         console.log('📦 Confirming pending order - reducing inventory for all items');
         
@@ -332,10 +337,36 @@ export default function AdminPage() {
           // Execute all inventory updates
           await Promise.all(inventoryUpdates);
           console.log('✅ All inventory reductions completed successfully');
+          
+          // Refresh product data in the store to reflect inventory changes
+          await refreshProducts();
         } catch (inventoryError) {
           console.error('❌ Failed to reduce inventory:', inventoryError);
           toast.error('Failed to reduce inventory. Please check stock levels and try again.');
           return; // Don't proceed with status update if inventory fails
+        }
+      }
+
+      if (isCancellingConfirmedOrder) {
+        console.log('🔄 Cancelling confirmed order - restoring inventory for all items');
+        
+        // Restore inventory for all items in the order
+        const inventoryRestores = order.items.map(async (item) => {
+          console.log(`📈 Restoring stock for ${item.product.name}: +${item.quantity}`);
+          return await productService.restoreStock(item.product.id, item.quantity);
+        });
+
+        try {
+          // Execute all inventory restores
+          await Promise.all(inventoryRestores);
+          console.log('✅ All inventory restored successfully');
+          
+          // Refresh product data in the store to reflect inventory changes
+          await refreshProducts();
+        } catch (inventoryError) {
+          console.error('❌ Failed to restore inventory:', inventoryError);
+          toast.error('Failed to restore inventory. Status will still be updated.');
+          // Don't return here - we still want to update the status even if restore fails
         }
       }
 

@@ -223,6 +223,46 @@ export const productService = {
 
     if (error) throw error;
     return data as Product;
+  },
+
+  // Restore stock quantity when order is cancelled (inverse of reduceStock)
+  async restoreStock(id: string, quantityToRestore: number) {
+    console.log(`🔄 Restoring stock for product ${id}: +${quantityToRestore}`);
+    
+    // First get current stock
+    const { data: product, error: getError } = await supabase
+      .from(TABLES.PRODUCTS)
+      .select('stock_quantity')
+      .eq('id', id)
+      .single();
+
+    if (getError) throw getError;
+
+    if (product.stock_quantity === null || product.stock_quantity === undefined) {
+      // If no stock tracking, just return
+      console.log('📦 No stock tracking for this product, skipping restore');
+      return;
+    }
+
+    const newStock = product.stock_quantity + quantityToRestore;
+
+    const { data, error } = await supabase
+      .from(TABLES.PRODUCTS)
+      .update({
+        stock_quantity: newStock,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Failed to restore stock:', error);
+      throw error;
+    }
+    
+    console.log(`✅ Stock restored: ${product.stock_quantity} → ${newStock}`);
+    return data as Product;
   }
 };
 
