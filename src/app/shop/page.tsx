@@ -393,7 +393,7 @@ export default function ShopPage() {
                             </span>
                             <button
                               onClick={() => handleQuantityChange(product, 1)}
-                              disabled={product.stock_quantity !== undefined && availableStock <= quantityInCart}
+                              disabled={product.stock_quantity !== undefined && availableStock <= 0}
                               className="p-2 rounded-full bg-earth-100 hover:bg-earth-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <PlusIcon className="h-4 w-4 text-earth-600" />
