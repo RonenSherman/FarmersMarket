@@ -423,6 +423,24 @@ export const orderService = {
 
     if (error) throw error;
     return data as Order & { vendors: Vendor };
+  },
+
+  // Delete order (admin only - for removing cancelled orders)
+  async delete(id: string) {
+    console.log('🗑️ Deleting order:', id);
+    
+    const { error } = await supabase
+      .from(TABLES.ORDERS)
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('❌ Failed to delete order:', error);
+      throw error;
+    }
+    
+    console.log('✅ Order deleted successfully');
+    return true;
   }
 };
 

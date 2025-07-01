@@ -307,51 +307,89 @@ export default function AdminPage() {
     }
 
     try {
+      console.log(`🔄 Updating order ${orderId} status to ${order_status}`);
+      
+      // Get the order details before updating
+      const order = state.orders.find(o => o.id === orderId);
+      if (!order) {
+        toast.error('Order not found');
+        return;
+      }
+
+      // Update order status in database
       await orderService.updateStatus(orderId, order_status);
       
-      // Find the updated order to send notification
-      const updatedOrder = state.orders.find(order => order.id === orderId);
-      if (updatedOrder) {
-        // Update the order status locally for email notification
-        const orderWithUpdatedStatus = { ...updatedOrder, order_status };
-        
-        try {
-          console.log('📧 Admin sending status update email to:', updatedOrder.customer_email);
-          console.log('📧 New status:', order_status);
-          
-          const notificationResponse = await fetch('/api/send-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              order: orderWithUpdatedStatus,
-              notificationMethod: updatedOrder.notification_method || 'email',
-              type: 'status_update'
-            })
-          });
-          
-          const notificationResult = await notificationResponse.json();
-          
-          if (notificationResult.success) {
-            if (order_status === 'cancelled') {
-              toast.success('Order cancelled and customer notified via email');
-            } else {
-              toast.success(`Order status updated to "${order_status}" and customer notified via email`);
-            }
-          } else {
-            toast.success(`Order status updated to "${order_status}"! (Email notification in simulation mode)`);
-          }
-        } catch (error) {
-          console.error('Failed to send customer notification:', error);
-          toast.success(`Order status updated to "${order_status}" (notification failed)`);
+      // Send notification to customer about status update
+      try {
+        const response = await fetch('/api/send-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order: { ...order, order_status },
+            notificationMethod: 'email' as const,
+            type: 'status_update'
+          })
+        });
+
+        if (!response.ok) {
+          console.error('Failed to send notification');
+        } else {
+          console.log('✅ Notification sent successfully');
         }
-      } else {
-        toast.success(`Order status updated to "${order_status}"`);
+      } catch (error) {
+        console.error('Failed to send notification:', error);
       }
+
+      // Show success message with context
+      const statusMessages = {
+        'pending': 'marked as pending',
+        'confirmed': 'confirmed - customer will be notified',
+        'ready': 'marked as ready for pickup - customer will be notified',
+        'completed': 'marked as completed',
+        'cancelled': 'cancelled - customer will be notified'
+      };
       
+      toast.success(`Order #${order.order_number} ${statusMessages[order_status]}`);
+      
+      // Reload data to reflect changes
       loadAdminData();
     } catch (error) {
       console.error('Error updating order status:', error);
       toast.error('Failed to update order status');
+    }
+  };
+
+  const handleRemoveOrder = async (orderId: string) => {
+    const order = state.orders.find(o => o.id === orderId);
+    if (!order) {
+      toast.error('Order not found');
+      return;
+    }
+
+    // Only allow removal of cancelled orders
+    if (order.order_status !== 'cancelled') {
+      toast.error('Only cancelled orders can be removed');
+      return;
+    }
+
+    const confirmMessage = `Are you sure you want to permanently remove this cancelled order?\n\nOrder #${order.order_number}\nCustomer: ${order.customer_name}\nTotal: $${order.total.toFixed(2)}\n\nThis action cannot be undone.`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      console.log(`🗑️ Removing cancelled order: ${orderId}`);
+      
+      await orderService.delete(orderId);
+      
+      toast.success(`Order #${order.order_number} removed successfully`);
+      
+      // Reload data to reflect changes
+      loadAdminData();
+    } catch (error) {
+      console.error('Error removing order:', error);
+      toast.error('Failed to remove order');
     }
   };
 
@@ -589,8 +627,17 @@ export default function AdminPage() {
                             🎉 Complete Order
                           </button>
                         )}
-                        {(order.order_status === 'completed' || order.order_status === 'cancelled') && (
-                          <span className="text-xs text-earth-500 italic">Order finalized</span>
+                        {order.order_status === 'completed' && (
+                          <span className="text-xs text-earth-500 italic">Order completed</span>
+                        )}
+                        {order.order_status === 'cancelled' && (
+                          <button
+                            onClick={() => handleRemoveOrder(order.id)}
+                            className="bg-gray-600 text-white px-3 py-2 rounded text-xs hover:bg-gray-700 transition-colors font-medium border-2 border-gray-700"
+                            title="Remove this cancelled order from the list - This action cannot be undone"
+                          >
+                            🗑️ Remove Order
+                          </button>
                         )}
                       </div>
                       
