@@ -1,37 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { tokenStore } from '@/lib/customerNotifications';
+import { customerNotificationService } from '@/lib/customerNotifications';
 
 export async function POST(request: NextRequest) {
   try {
     const { action, orderId, token } = await request.json();
 
-    if (action === 'store') {
-      // Store a new cancellation token
-      const tokenData = {
-        token,
-        created: Date.now(),
-        orderId
-      };
+    if (action === 'verify') {
+      // Verify an existing token using the customer notification service
+      const isValid = await customerNotificationService.verifyCancellationToken(orderId, token);
       
-      tokenStore.set(`${orderId}:${token}`, tokenData);
-      console.log('🔐 Stored cancellation token for order:', orderId);
-      
-      return NextResponse.json({ success: true });
-      
-    } else if (action === 'verify') {
-      // Verify an existing token
-      const key = `${orderId}:${token}`;
-      const storedData = tokenStore.get(key);
-      
-      if (!storedData) {
-        return NextResponse.json({ valid: false, reason: 'Token not found' });
-      }
-      
-      // Check if token has expired (24 hours)
-      const isExpired = Date.now() - storedData.created > 24 * 60 * 60 * 1000;
-      if (isExpired) {
-        tokenStore.delete(key); // Clean up expired token
-        return NextResponse.json({ valid: false, reason: 'Token expired' });
+      if (!isValid) {
+        return NextResponse.json({ valid: false, reason: 'Token not found or expired' });
       }
       
       console.log('✅ Token verified for order:', orderId);

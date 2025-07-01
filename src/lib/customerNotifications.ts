@@ -3,12 +3,7 @@
  */
 
 import type { Order, Vendor } from '@/types';
-
-// Simple in-memory token storage (shared with API route)
-const tokenStore = new Map<string, { token: string; created: number; orderId: string }>();
-
-// Export the token store so it can be accessed by the API route
-export { tokenStore };
+import { supabase } from './supabase';
 
 export type NotificationMethod = 'email';
 export type OrderStatusType = Order['order_status'];
@@ -83,43 +78,54 @@ class CustomerNotificationService {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   }
 
-  // Store cancellation token directly in memory
-  private storeCancellationToken(orderId: string, token: string): void {
+  // Store cancellation token in database
+  private async storeCancellationToken(orderId: string, token: string): Promise<void> {
     try {
       const baseUrl = this.getBaseUrl();
       console.log('🔐 Storing cancellation token for order:', orderId);
       console.log('🔗 Cancellation URL will be:', `${baseUrl}/cancel-order/${orderId}?token=${token}`);
       
-      const tokenData = {
-        token,
-        created: Date.now(),
-        orderId
-      };
+      const { error } = await supabase
+        .from('cancellation_tokens')
+        .insert({
+          order_id: orderId,
+          token: token,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
+        });
       
-      const key = `${orderId}:${token}`;
-      tokenStore.set(key, tokenData);
-      console.log('✅ Cancellation token stored successfully in memory');
+      if (error) {
+        console.error('❌ Failed to store cancellation token:', error);
+        throw error;
+      }
+      
+      console.log('✅ Cancellation token stored successfully in database');
     } catch (error) {
       console.error('Error storing cancellation token:', error);
+      throw error;
     }
   }
 
-  // Verify cancellation token
+  // Verify cancellation token from database
   async verifyCancellationToken(orderId: string, token: string): Promise<boolean> {
     try {
-      const key = `${orderId}:${token}`;
-      const storedData = tokenStore.get(key);
+      console.log('🔐 Verifying cancellation token for order:', orderId);
       
-      if (!storedData) {
-        console.log('🔐 Token not found for order:', orderId);
+      const { data, error } = await supabase
+        .from('cancellation_tokens')
+        .select('*')
+        .eq('order_id', orderId)
+        .eq('token', token)
+        .eq('is_used', false)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+      
+      if (error) {
+        console.log('🔐 Token not found or error:', error.message);
         return false;
       }
       
-      // Check if token has expired (24 hours)
-      const isExpired = Date.now() - storedData.created > 24 * 60 * 60 * 1000;
-      if (isExpired) {
-        tokenStore.delete(key); // Clean up expired token
-        console.log('🔐 Token expired for order:', orderId);
+      if (!data) {
+        console.log('🔐 Token not found for order:', orderId);
         return false;
       }
       
@@ -128,6 +134,30 @@ class CustomerNotificationService {
     } catch (error) {
       console.error('Error verifying cancellation token:', error);
       return false;
+    }
+  }
+
+  // Mark cancellation token as used
+  async markTokenAsUsed(orderId: string, token: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('cancellation_tokens')
+        .update({ 
+          is_used: true, 
+          used_at: new Date().toISOString() 
+        })
+        .eq('order_id', orderId)
+        .eq('token', token);
+      
+      if (error) {
+        console.error('❌ Failed to mark token as used:', error);
+        throw error;
+      }
+      
+      console.log('✅ Token marked as used');
+    } catch (error) {
+      console.error('Error marking token as used:', error);
+      throw error;
     }
   }
 
@@ -299,10 +329,16 @@ class CustomerNotificationService {
     notificationMethod: NotificationMethod,
     includeCancellation = false
   ): Promise<boolean> {
-    const cancellationToken = includeCancellation ? this.generateCancellationToken() : undefined;
+    let cancellationToken = includeCancellation ? this.generateCancellationToken() : undefined;
     
     if (cancellationToken) {
-      this.storeCancellationToken(order.id, cancellationToken);
+      try {
+        await this.storeCancellationToken(order.id, cancellationToken);
+      } catch (error) {
+        console.error('Failed to store cancellation token, proceeding without it:', error);
+        // Don't fail the entire email send if token storage fails
+        cancellationToken = undefined;
+      }
     }
 
     const items = order.items.map(item => 

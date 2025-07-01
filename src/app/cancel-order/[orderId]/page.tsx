@@ -119,6 +119,16 @@ export default function CancelOrderPage() {
     try {
       await orderService.updateStatus(order.id, 'cancelled');
       
+      // Mark the cancellation token as used
+      if (token) {
+        try {
+          await customerNotificationService.markTokenAsUsed(order.id, token);
+        } catch (error) {
+          console.error('Failed to mark token as used:', error);
+          // Don't fail the cancellation if token marking fails
+        }
+      }
+      
       // Send cancellation confirmation
       if (order.notification_method) {
         try {
