@@ -16,8 +16,7 @@ export async function POST(request: NextRequest) {
     console.log('📧 From email:', process.env.SENDGRID_FROM_EMAIL);
     
     // Log the base URL being used for cancellation links
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://farmers-market-3ct4.vercel.app');
+    const baseUrl = 'https://farmers-market-3ct4.vercel.app';
     console.log('📧 Base URL for cancellation links:', baseUrl);
 
     // Use the existing customerNotificationService instance

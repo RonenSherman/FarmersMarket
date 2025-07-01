@@ -3,6 +3,14 @@
  */
 
 import type { Order, Vendor } from '@/types';
+import sgMail from '@sendgrid/mail';
+import { supabase } from './supabase';
+
+// Simple in-memory token storage (shared with API route)
+const tokenStore = new Map<string, { token: string; created: number; orderId: string }>();
+
+// Export the token store so it can be accessed by the API route
+export { tokenStore };
 
 export type NotificationMethod = 'email';
 export type OrderStatusType = Order['order_status'];
@@ -27,11 +35,35 @@ interface EmailTemplate {
   text: string;
 }
 
+interface OrderStatusUpdateData {
+  orderId: string;
+  orderNumber: string;
+  status: 'pending' | 'confirmed' | 'ready' | 'completed' | 'cancelled';
+  items: Array<{
+    product_name: string;
+    quantity: number;
+    unit_price: number;
+    pricing_unit: string;
+  }>;
+  total: number;
+  vendorName: string;
+  vendorEmail: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  cancellationToken?: string;
+}
+
+interface VendorWelcomeData {
+  vendorName: string;
+  vendorEmail: string;
+  paymentMethod?: string;
+}
+
 class CustomerNotificationService {
   private static instance: CustomerNotificationService;
   private apiKey: string = process.env.SENDGRID_API_KEY || '';
   private fromEmail: string = process.env.SENDGRID_FROM_EMAIL || 'orders@duvallfarmersmarket.org';
-  private baseUrl: string = process.env.NEXT_PUBLIC_BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://farmers-market-3ct4.vercel.app');
+  private baseUrl: string = 'https://farmers-market-3ct4.vercel.app';
 
   static getInstance(): CustomerNotificationService {
     if (!CustomerNotificationService.instance) {
@@ -40,56 +72,61 @@ class CustomerNotificationService {
     return CustomerNotificationService.instance;
   }
 
+  // Get the correct base URL for the application
+  private getBaseUrl(): string {
+    // Always use the production URL for email links to ensure they work
+    const productionUrl = 'https://farmers-market-3ct4.vercel.app';
+    console.log('🔗 Using base URL for email links:', productionUrl);
+    return productionUrl;
+  }
+
   // Generate cancellation token for secure order management
   private generateCancellationToken(): string {
     return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   }
 
-  // Store cancellation token (server-side)
-  private async storeCancellationToken(orderId: string, token: string): Promise<void> {
+  // Store cancellation token directly in memory
+  private storeCancellationToken(orderId: string, token: string): void {
     try {
+      const baseUrl = this.getBaseUrl();
       console.log('🔐 Storing cancellation token for order:', orderId);
-      console.log('🔗 Cancellation URL will be:', `${this.baseUrl}/cancel-order/${orderId}?token=${token}`);
+      console.log('🔗 Cancellation URL will be:', `${baseUrl}/cancel-order/${orderId}?token=${token}`);
       
-      const response = await fetch('/api/verify-cancellation-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'store',
-          orderId,
-          token
-        })
-      });
+      const tokenData = {
+        token,
+        created: Date.now(),
+        orderId
+      };
       
-      if (!response.ok) {
-        console.error('Failed to store cancellation token');
-      } else {
-        console.log('✅ Cancellation token stored successfully');
-      }
+      const key = `${orderId}:${token}`;
+      tokenStore.set(key, tokenData);
+      console.log('✅ Cancellation token stored successfully in memory');
     } catch (error) {
       console.error('Error storing cancellation token:', error);
     }
   }
 
-  // Verify cancellation token (server-side)
-  public async verifyCancellationToken(orderId: string, token: string): Promise<boolean> {
+  // Verify cancellation token
+  async verifyCancellationToken(orderId: string, token: string): Promise<boolean> {
     try {
-      const response = await fetch('/api/verify-cancellation-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'verify',
-          orderId,
-          token
-        })
-      });
+      const key = `${orderId}:${token}`;
+      const storedData = tokenStore.get(key);
       
-      if (!response.ok) {
+      if (!storedData) {
+        console.log('🔐 Token not found for order:', orderId);
         return false;
       }
       
-      const result = await response.json();
-      return result.valid;
+      // Check if token has expired (24 hours)
+      const isExpired = Date.now() - storedData.created > 24 * 60 * 60 * 1000;
+      if (isExpired) {
+        tokenStore.delete(key); // Clean up expired token
+        console.log('🔐 Token expired for order:', orderId);
+        return false;
+      }
+      
+      console.log('✅ Token verified for order:', orderId);
+      return true;
     } catch (error) {
       console.error('Error verifying cancellation token:', error);
       return false;
@@ -118,8 +155,9 @@ class CustomerNotificationService {
 
     // Show cancellation link only for orders that can be cancelled
     const canBeCancelled = data.status === 'pending' || data.status === 'confirmed';
+    const baseUrl = this.getBaseUrl();
     const cancellationLink = data.cancellationToken && canBeCancelled ? 
-      `\n\n🚫 Need to cancel? <a href="${this.baseUrl}/cancel-order/${data.orderId}?token=${data.cancellationToken}" style="color: #dc2626; text-decoration: underline;">Click here to cancel your order</a>` : '';
+      `\n\n🚫 Need to cancel? <a href="${baseUrl}/cancel-order/${data.orderId}?token=${data.cancellationToken}" style="color: #dc2626; text-decoration: underline;">Click here to cancel your order</a>` : '';
 
     const subject = `${statusEmojis[status]} Order ${orderNumber} - ${status.charAt(0).toUpperCase() + status.slice(1)}`;
     
@@ -155,7 +193,7 @@ class CustomerNotificationService {
           ${cancellationLink ? `<div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 20px; text-align: center; background: #fef2f2; border-radius: 8px; padding: 20px;">
             <h4 style="margin: 0 0 10px; color: #dc2626;">Need to Cancel?</h4>
             <p style="margin: 0 0 15px; color: #7f1d1d; font-size: 14px;">You can cancel this order anytime before it's marked as ready for pickup.</p>
-            <a href="${this.baseUrl}/cancel-order/${data.orderId}?token=${data.cancellationToken}" 
+            <a href="${baseUrl}/cancel-order/${data.orderId}?token=${data.cancellationToken}" 
                style="background: #dc2626; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
               🚫 Cancel Order
             </a>
@@ -188,7 +226,7 @@ class CustomerNotificationService {
       Order Items:
       ${items}
       
-      ${data.cancellationToken && canBeCancelled ? `Need to cancel? Visit: ${this.baseUrl}/cancel-order/${data.orderId}?token=${data.cancellationToken}` : ''}
+      ${data.cancellationToken && canBeCancelled ? `Need to cancel? Visit: ${baseUrl}/cancel-order/${data.orderId}?token=${data.cancellationToken}` : ''}
       
       Duvall Farmers Market
       Saturdays 9:00 AM - 2:00 PM
@@ -257,8 +295,6 @@ class CustomerNotificationService {
     }
   }
 
-
-
   // Main method to send notifications (email only)
   async sendOrderNotification(
     order: Order & { vendors: Vendor },
@@ -268,7 +304,7 @@ class CustomerNotificationService {
     const cancellationToken = includeCancellation ? this.generateCancellationToken() : undefined;
     
     if (cancellationToken) {
-      await this.storeCancellationToken(order.id, cancellationToken);
+      this.storeCancellationToken(order.id, cancellationToken);
     }
 
     const items = order.items.map(item => 

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// Simple in-memory token storage (in production, use a database)
-const tokenStore = new Map<string, { token: string; created: number; orderId: string }>();
+import { tokenStore } from '@/lib/customerNotifications';
 
 export async function POST(request: NextRequest) {
   try {
