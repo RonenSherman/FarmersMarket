@@ -3,8 +3,6 @@
  */
 
 import type { Order, Vendor } from '@/types';
-import sgMail from '@sendgrid/mail';
-import { supabase } from './supabase';
 
 // Simple in-memory token storage (shared with API route)
 const tokenStore = new Map<string, { token: string; created: number; orderId: string }>();
