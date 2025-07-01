@@ -316,6 +316,29 @@ export default function AdminPage() {
         return;
       }
 
+      // Check if this is a pending → confirmed transition (reduce inventory)
+      const isConfirmingPendingOrder = order.order_status === 'pending' && order_status === 'confirmed';
+      
+      if (isConfirmingPendingOrder) {
+        console.log('📦 Confirming pending order - reducing inventory for all items');
+        
+        // Reduce inventory for all items in the order
+        const inventoryUpdates = order.items.map(async (item) => {
+          console.log(`📉 Reducing stock for ${item.product.name}: -${item.quantity}`);
+          return await productService.reduceStock(item.product.id, item.quantity);
+        });
+
+        try {
+          // Execute all inventory updates
+          await Promise.all(inventoryUpdates);
+          console.log('✅ All inventory reductions completed successfully');
+        } catch (inventoryError) {
+          console.error('❌ Failed to reduce inventory:', inventoryError);
+          toast.error('Failed to reduce inventory. Please check stock levels and try again.');
+          return; // Don't proceed with status update if inventory fails
+        }
+      }
+
       // Update order status in database
       await orderService.updateStatus(orderId, order_status);
       
