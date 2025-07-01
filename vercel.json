@@ -1,33 +1,9 @@
 {
-  "version": 2,
-  "name": "duvall-farmers-market",
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
-    }
-  ],
-  "env": {
-    "NEXT_PUBLIC_MARKET_NAME": "Duvall Farmers Market",
-    "NEXT_PUBLIC_MARKET_DAY": "thursday",
-    "NEXT_PUBLIC_MARKET_END_TIME": "18:30",
-    "NEXT_PUBLIC_BASE_URL": "https://farmers-market-3ct4.vercel.app"
-  },
+  "buildCommand": "npm run build",
+  "framework": "nextjs",
   "functions": {
-    "src/app/api/**/*.ts": {
+    "app/api/**/*.js": {
       "maxDuration": 30
     }
-  },
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    }
-  ]
+  }
 } 
