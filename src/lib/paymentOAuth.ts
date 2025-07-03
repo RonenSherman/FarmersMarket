@@ -7,9 +7,9 @@ export const PAYMENT_OAUTH_CONFIG = {
     client_id: process.env.NEXT_PUBLIC_SQUARE_CLIENT_ID || process.env.SQUARE_CLIENT_ID!,
     redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/oauth/square/callback`,
     scopes: ['MERCHANT_PROFILE_READ', 'PAYMENTS_WRITE', 'ORDERS_WRITE'],
-    authorize_url: process.env.NODE_ENV === 'production' 
-      ? 'https://connect.squareup.com/oauth2/authorize'
-      : 'https://connect.squareupsandbox.com/oauth2/authorize'
+    authorize_url: process.env.SQUARE_ENVIRONMENT === 'sandbox'
+      ? 'https://connect.squareupsandbox.com/oauth2/authorize'
+      : 'https://connect.squareup.com/oauth2/authorize'
   },
   stripe: {
     client_id: process.env.NEXT_PUBLIC_STRIPE_CLIENT_ID || process.env.STRIPE_CLIENT_ID!,

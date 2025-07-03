@@ -40,9 +40,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Exchange authorization code for access token
-    const tokenUrl = process.env.NODE_ENV === 'production'
-      ? 'https://connect.squareup.com/oauth2/token'
-      : 'https://connect.squareupsandbox.com/oauth2/token';
+    const tokenUrl = process.env.SQUARE_ENVIRONMENT === 'sandbox'
+      ? 'https://connect.squareupsandbox.com/oauth2/token'
+      : 'https://connect.squareup.com/oauth2/token';
 
     console.log(`Exchanging Square code with ${tokenUrl}`);
     console.log('Request payload:', {
@@ -96,9 +96,9 @@ export async function POST(request: NextRequest) {
 
     // Get merchant profile for additional info
     const merchantResponse = await fetch(
-      process.env.NODE_ENV === 'production'
-        ? 'https://connect.squareup.com/v2/merchants'
-        : 'https://connect.squareupsandbox.com/v2/merchants',
+      process.env.SQUARE_ENVIRONMENT === 'sandbox'
+        ? 'https://connect.squareupsandbox.com/v2/merchants'
+        : 'https://connect.squareup.com/v2/merchants',
       {
         headers: {
           'Authorization': `Bearer ${access_token}`,

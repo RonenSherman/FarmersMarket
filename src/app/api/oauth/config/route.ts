@@ -13,9 +13,9 @@ export async function GET() {
         app_url_configured: !!process.env.NEXT_PUBLIC_APP_URL,
         redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/oauth/square/callback`,
         environment: process.env.NODE_ENV,
-        oauth_url_sample: process.env.NODE_ENV === 'production' 
-          ? 'https://connect.squareup.com/oauth2/authorize'
-          : 'https://connect.squareupsandbox.com/oauth2/authorize'
+        oauth_url_sample: process.env.SQUARE_ENVIRONMENT === 'sandbox'
+          ? 'https://connect.squareupsandbox.com/oauth2/authorize'
+          : 'https://connect.squareup.com/oauth2/authorize'
       },
       stripe: {
         client_id_configured: !!(process.env.NEXT_PUBLIC_STRIPE_CLIENT_ID || process.env.STRIPE_CLIENT_ID),

@@ -115,9 +115,9 @@ export async function POST(request: NextRequest) {
 }
 
 async function processSquarePayment(order: any, accessToken: string, merchantId: string) {
-  const baseUrl = process.env.NODE_ENV === 'production'
-    ? 'https://connect.squareup.com'
-    : 'https://connect.squareupsandbox.com';
+  const baseUrl = process.env.SQUARE_ENVIRONMENT === 'sandbox'
+    ? 'https://connect.squareupsandbox.com'
+    : 'https://connect.squareup.com';
 
   // Create payment request
   const paymentRequest = {
