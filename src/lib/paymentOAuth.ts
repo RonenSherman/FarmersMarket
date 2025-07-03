@@ -24,7 +24,7 @@ export class PaymentOAuthService {
   /**
    * Generate OAuth authorization URL for a payment provider
    */
-  static generateAuthUrl(provider: 'square' | 'stripe', vendorId: string): string {
+  static generateAuthUrl(provider: 'square' | 'stripe', vendorId: string, source: 'vendor' | 'admin' = 'vendor'): string {
     const config = PAYMENT_OAUTH_CONFIG[provider];
     
     // Validate configuration
@@ -35,7 +35,7 @@ export class PaymentOAuthService {
       throw new Error(`${provider} redirect URI not configured properly`);
     }
     
-    const state = this.generateState(vendorId, provider);
+    const state = this.generateState(vendorId, provider, source);
     
     const params = new URLSearchParams({
       client_id: config.client_id,
@@ -61,19 +61,19 @@ export class PaymentOAuthService {
   /**
    * Generate secure state parameter for OAuth flow
    */
-  private static generateState(vendorId: string, provider: string): string {
+  private static generateState(vendorId: string, provider: string, source: 'vendor' | 'admin' = 'vendor'): string {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2);
-    return btoa(`${vendorId}:${provider}:${timestamp}:${random}`);
+    return btoa(`${vendorId}:${provider}:${source}:${timestamp}:${random}`);
   }
 
   /**
    * Parse and validate state parameter
    */
-  static parseState(state: string): { vendorId: string; provider: string; timestamp: number } | null {
+  static parseState(state: string): { vendorId: string; provider: string; source: string; timestamp: number } | null {
     try {
       const decoded = atob(state);
-      const [vendorId, provider, timestamp] = decoded.split(':');
+      const [vendorId, provider, source, timestamp] = decoded.split(':');
       
       // Validate timestamp (state should be used within 10 minutes)
       const now = Date.now();
@@ -82,7 +82,7 @@ export class PaymentOAuthService {
         throw new Error('State expired');
       }
 
-      return { vendorId, provider, timestamp: parseInt(timestamp) };
+      return { vendorId, provider, source: source || 'vendor', timestamp: parseInt(timestamp) };
     } catch (error) {
       console.error('Invalid state parameter:', error);
       return null;

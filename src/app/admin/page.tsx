@@ -247,7 +247,7 @@ export default function AdminPage() {
 
       // Import the OAuth service dynamically
       const { PaymentOAuthService } = await import('@/lib/paymentOAuth');
-      const authUrl = PaymentOAuthService.generateAuthUrl(provider, vendorId);
+      const authUrl = PaymentOAuthService.generateAuthUrl(provider, vendorId, 'admin');
       
       // Open OAuth URL in new window
       window.open(authUrl, '_blank');
