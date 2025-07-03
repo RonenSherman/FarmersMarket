@@ -136,9 +136,9 @@ export async function POST(request: Request) {
 
 async function captureSquarePayment(paymentId: string, accessToken: string) {
   try {
-    const squareApiUrl = process.env.SQUARE_ENVIRONMENT === 'sandbox'
-      ? `https://connect.squareupsandbox.com/v2/payments/${paymentId}/complete`
-      : `https://connect.squareup.com/v2/payments/${paymentId}/complete`;
+    const squareApiUrl = process.env.NODE_ENV === 'production'
+      ? `https://connect.squareup.com/v2/payments/${paymentId}/complete`
+      : `https://connect.squareupsandbox.com/v2/payments/${paymentId}/complete`;
 
     const response = await fetch(squareApiUrl, {
       method: 'POST',

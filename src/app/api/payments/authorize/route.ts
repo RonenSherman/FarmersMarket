@@ -74,9 +74,9 @@ async function authorizeSquarePayment(body: any, accessToken: string, connection
       note: 'Farmers Market Order Authorization'
     };
 
-    const squareApiUrl = process.env.SQUARE_ENVIRONMENT === 'sandbox'
-      ? 'https://connect.squareupsandbox.com/v2/payments'
-      : 'https://connect.squareup.com/v2/payments';
+    const squareApiUrl = process.env.NODE_ENV === 'production'
+      ? 'https://connect.squareup.com/v2/payments'
+      : 'https://connect.squareupsandbox.com/v2/payments';
 
     const response = await fetch(squareApiUrl, {
       method: 'POST',
