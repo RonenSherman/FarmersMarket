@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PaymentOAuthService } from '@/lib/paymentOAuth';
 
+// This route needs to be dynamic to handle OAuth callback parameters
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
