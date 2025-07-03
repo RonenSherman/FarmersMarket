@@ -1,14 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request: NextRequest) {
   try {
     const { code, vendorId } = await request.json();
 
+    // Create service role client to bypass RLS
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('Missing Supabase configuration:', {
+        hasUrl: !!supabaseUrl,
+        hasServiceKey: !!serviceRoleKey
+      });
+      return NextResponse.json(
+        { error: 'Database configuration error' },
+        { status: 500 }
+      );
+    }
+    
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+
     if (!code || !vendorId) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }
+      );
+    }
+
+    // Validate environment variables
+    if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_PUBLISHABLE_KEY) {
+      console.error('Stripe credentials not configured');
+      return NextResponse.json(
+        { error: 'Stripe credentials not configured' },
+        { status: 500 }
       );
     }
 
@@ -57,7 +83,7 @@ export async function POST(request: NextRequest) {
     // Store connection in database
     const { data: connection, error: connectionError } = await supabase
       .from('payment_connections')
-      .insert([
+      .upsert([
         {
           vendor_id: vendorId,
           provider: 'stripe',
@@ -75,8 +101,11 @@ export async function POST(request: NextRequest) {
             charges_enabled: accountData?.charges_enabled || false,
             payouts_enabled: accountData?.payouts_enabled || false,
           },
+          updated_at: new Date().toISOString(),
         },
-      ])
+      ], {
+        onConflict: 'vendor_id,provider'
+      })
       .select()
       .single();
 

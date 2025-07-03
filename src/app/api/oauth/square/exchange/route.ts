@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     // Store connection in database
     const { data: connection, error: connectionError } = await supabase
       .from('payment_connections')
-      .insert([
+      .upsert([
         {
           vendor_id: vendorId,
           provider: 'square',
@@ -135,8 +135,11 @@ export async function POST(request: NextRequest) {
             country: merchantData?.country || '',
             currency: merchantData?.currency || 'USD',
           },
+          updated_at: new Date().toISOString(),
         },
-      ])
+      ], {
+        onConflict: 'vendor_id,provider'
+      })
       .select()
       .single();
 
