@@ -7,6 +7,7 @@ import { useMarketStore } from '@/store/marketStore';
 import { vendorService, orderService } from '@/lib/database';
 import { notificationService } from '@/lib/notifications';
 import { customerNotificationService } from '@/lib/customerNotifications';
+import PaymentWidget from '@/components/PaymentWidget';
 import type { Vendor, VendorCart } from '@/types';
 import { PRICING_UNIT_LABELS } from '@/types';
 
@@ -19,6 +20,9 @@ export default function VendorCheckoutPage() {
   const [vendorCart, setVendorCart] = useState<VendorCart | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [paymentAuthorized, setPaymentAuthorized] = useState(false);
+  const [paymentData, setPaymentData] = useState<any>(null);
+  const [paymentError, setPaymentError] = useState<string>('');
   
   const [customerInfo, setCustomerInfo] = useState({
     email: '',
@@ -62,9 +66,28 @@ export default function VendorCheckoutPage() {
     }
   };
 
+  const handlePaymentSuccess = (authData: any) => {
+    setPaymentData(authData);
+    setPaymentAuthorized(true);
+    setPaymentError('');
+    toast.success('Payment authorized! You can now place your order.');
+  };
+
+  const handlePaymentError = (error: string) => {
+    setPaymentError(error);
+    setPaymentAuthorized(false);
+    setPaymentData(null);
+    toast.error(error);
+  };
+
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!vendor || !vendorCart) return;
+    
+    if (!paymentAuthorized || !paymentData) {
+      toast.error('Please authorize payment before placing your order');
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -88,12 +111,19 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
         tax: 0, // Calculate tax if needed
         total: vendorCart.total,
         payment_method: 'card',
-        payment_status: 'pending',
+        payment_status: 'authorized', // Payment is authorized but not captured
         order_status: 'pending',
         order_date: new Date().toISOString().split('T')[0],
         order_number: orderNumber,
         special_instructions: deliveryInfo,
-        notification_method: customerInfo.notification_method
+        notification_method: customerInfo.notification_method,
+        payment_authorization_data: JSON.stringify({
+          provider: paymentData.provider,
+          authorizationId: paymentData.authorizationId,
+          amount: paymentData.amount,
+          status: paymentData.status,
+          authorized_at: new Date().toISOString()
+        })
       });
 
       // Send admin notification
@@ -405,19 +435,22 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
                 </p>
               </div>
 
-              {/* Payment Method Info */}
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <h3 className="font-medium text-green-800 mb-2">💳 Payment Information</h3>
-                <p className="text-sm text-green-700">
-                  Payment Method: <strong>Credit/Debit Card Only</strong>
-                </p>
-                <p className="text-sm text-green-700 mt-1">
-                  Vendor uses: <strong className="uppercase">{vendor.payment_method}</strong> payment system
-                </p>
-                <p className="text-sm text-green-700 mt-1">
-                  Your card will be charged when the order is confirmed for delivery.
-                </p>
-              </div>
+              {/* Payment Widget */}
+              {vendor.payment_connected && vendor.payment_provider ? (
+                <PaymentWidget
+                  vendor={vendor}
+                  orderTotal={vendorCart.total}
+                  onPaymentSuccess={handlePaymentSuccess}
+                  onPaymentError={handlePaymentError}
+                />
+              ) : (
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <h3 className="font-medium text-yellow-800 mb-2">⚠️ Payment Not Available</h3>
+                  <p className="text-sm text-yellow-700">
+                    This vendor has not connected a payment processor yet. Please contact them directly to arrange payment.
+                  </p>
+                </div>
+              )}
 
               <div className="flex space-x-4">
                 <button
@@ -429,10 +462,19 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="flex-1 bg-market-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-market-700 transition-colors disabled:opacity-50"
+                  disabled={submitting || !paymentAuthorized}
+                  className={`flex-1 py-3 px-6 rounded-lg font-medium transition-colors disabled:opacity-50 ${
+                    paymentAuthorized 
+                      ? 'bg-market-600 text-white hover:bg-market-700' 
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
                 >
-                  {submitting ? 'Placing Order...' : 'Place Order'}
+                  {submitting 
+                    ? 'Placing Order...' 
+                    : paymentAuthorized 
+                      ? 'Place Order' 
+                      : 'Authorize Payment First'
+                  }
                 </button>
               </div>
             </form>

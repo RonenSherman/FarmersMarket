@@ -129,13 +129,14 @@ export interface Order {
   tax: number;
   total: number;
   payment_method: 'card' | 'cash';
-  payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
+  payment_status: 'pending' | 'authorized' | 'paid' | 'failed' | 'refunded' | 'cancelled';
   order_status: 'pending' | 'confirmed' | 'ready' | 'completed' | 'cancelled';
   pickup_time?: string;
   order_date: string;
   order_number: string;
   special_instructions?: string;
   notification_method?: 'email';
+  payment_authorization_data?: string; // JSON string containing payment authorization details
   created_at: string;
   updated_at: string;
 }
