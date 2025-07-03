@@ -7,7 +7,7 @@ import { useMarketStore } from '@/store/marketStore';
 import { MinusIcon, PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import type { Vendor, Product, VendorCart, PricingUnit, MarketDate } from '@/types';
 import { PRICING_UNIT_LABELS } from '@/types';
-import { isMarketOpen, getNextMarketDate, formatMarketDate, isMarketOpenWithTimes } from '@/lib/utils';
+import { isMarketOpen, getNextMarketDate, formatMarketDate, isMarketOpenOnDate } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 
 export default function ShopPage() {
@@ -46,10 +46,21 @@ export default function ShopPage() {
       console.log('Shop page - Today market date from DB:', todayMarketDate);
       setTodayMarket(todayMarketDate);
 
-      if (todayMarketDate && todayMarketDate.is_active && todayMarketDate.weather_status === 'scheduled') {
+      if (todayMarketDate && todayMarketDate.is_active) {
+        // Check if the market is cancelled due to weather
+        if (todayMarketDate.weather_status === 'cancelled') {
+          console.log('Shop page - Market cancelled due to weather');
+          setMarketOpen(false);
+          toast.error('Today\'s market has been cancelled due to weather. Check the calendar for updates.');
+          setTimeout(() => {
+            router.replace('/calendar');
+          }, 3500);
+          return;
+        }
+
         // Use the actual market times from the database
-        const open = isMarketOpenWithTimes(todayMarketDate.start_time, todayMarketDate.end_time);
-        console.log('Shop page - Market open check:', open, 'Times:', todayMarketDate.start_time, '-', todayMarketDate.end_time);
+        const open = isMarketOpenOnDate(todayMarketDate.date, todayMarketDate.start_time, todayMarketDate.end_time);
+        console.log('Shop page - Market open check:', open, 'Date:', todayMarketDate.date, 'Times:', todayMarketDate.start_time, '-', todayMarketDate.end_time);
         setMarketOpen(open);
         
         if (!open) {
@@ -61,7 +72,8 @@ export default function ShopPage() {
           loadShopData();
         }
       } else {
-        // Fallback to the default logic if no market date found
+        // No active market date found - check if today should be a market day using fallback logic
+        console.log('Shop page - No active market date found, using fallback logic');
         const open = isMarketOpen();
         console.log('Shop page - Using fallback logic, market open:', open);
         setMarketOpen(open);
