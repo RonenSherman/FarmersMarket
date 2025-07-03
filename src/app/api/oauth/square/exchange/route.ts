@@ -3,8 +3,14 @@ import { createClient } from '@supabase/supabase-js';
 import { customerNotificationService } from '@/lib/customerNotifications';
 
 export async function POST(request: NextRequest) {
+  console.log('🔧 Square OAuth exchange started');
   try {
     const { code, vendorId } = await request.json();
+    console.log('📋 Exchange parameters:', { 
+      hasCode: !!code, 
+      vendorId, 
+      codeLength: code?.length 
+    });
 
     // Create service role client to bypass RLS
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -118,6 +124,7 @@ export async function POST(request: NextRequest) {
     const refreshTokenHash = refresh_token ? Buffer.from(refresh_token).toString('base64') : null;
 
     // Store connection in database
+    console.log('💾 Storing payment connection in database for vendor:', vendorId);
     const { data: connection, error: connectionError } = await supabase
       .from('payment_connections')
       .upsert([
@@ -142,6 +149,12 @@ export async function POST(request: NextRequest) {
       })
       .select()
       .single();
+
+    console.log('💾 Payment connection result:', {
+      success: !connectionError,
+      connectionId: connection?.id,
+      error: connectionError?.message
+    });
 
     if (connectionError) {
       console.error('Database error storing payment connection:', {
@@ -208,6 +221,14 @@ export async function POST(request: NextRequest) {
         // Don't fail the entire request if email fails
       }
     }
+
+    console.log('✅ Square OAuth exchange completed successfully', {
+      connectionId: connection.id,
+      vendorId: connection.vendor_id,
+      provider: connection.provider,
+      accountId: connection.provider_account_id,
+      status: connection.connection_status
+    });
 
     return NextResponse.json({
       id: connection.id,
