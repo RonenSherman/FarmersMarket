@@ -5,17 +5,17 @@ import { PaymentOAuthService } from '@/lib/paymentOAuth';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams;
+  const state = searchParams.get('state');
+  
   try {
-    const searchParams = request.nextUrl.searchParams;
     const code = searchParams.get('code');
-    const state = searchParams.get('state');
     const error = searchParams.get('error');
 
     // Handle OAuth error
     if (error) {
       console.error('Square OAuth error:', error);
-      // Use a simple check since state might not be parsed yet
-      const errorPage = searchParams.get('state')?.includes('admin') ? '/admin' : '/vendor-signup';
+      const errorPage = state?.includes('admin') ? '/admin' : '/vendor-signup';
       return NextResponse.redirect(
         new URL(`${errorPage}?error=${encodeURIComponent(error)}`, request.url)
       );
@@ -23,8 +23,7 @@ export async function GET(request: NextRequest) {
 
     // Validate required parameters
     if (!code || !state) {
-      // Use a simple check since state might not be parsed yet
-      const errorPage = searchParams.get('state')?.includes('admin') ? '/admin' : '/vendor-signup';
+      const errorPage = state?.includes('admin') ? '/admin' : '/vendor-signup';
       return NextResponse.redirect(
         new URL(`${errorPage}?error=invalid_request`, request.url)
       );
@@ -33,8 +32,7 @@ export async function GET(request: NextRequest) {
     // Parse and validate state
     const stateData = PaymentOAuthService.parseState(state);
     if (!stateData) {
-      // Use a simple check since state might not be parsed yet
-      const errorPage = searchParams.get('state')?.includes('admin') ? '/admin' : '/vendor-signup';
+      const errorPage = state?.includes('admin') ? '/admin' : '/vendor-signup';
       return NextResponse.redirect(
         new URL(`${errorPage}?error=invalid_state`, request.url)
       );
