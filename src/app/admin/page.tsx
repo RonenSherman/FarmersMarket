@@ -7,7 +7,7 @@ import CameraUpload from '@/components/CameraUpload';
 import { notificationService } from '@/lib/notifications';
 import { customerNotificationService } from '@/lib/customerNotifications';
 import { useMarketStore } from '@/store/marketStore';
-import type { Vendor, Product, MarketDate, Order, PricingUnit } from '@/types';
+import type { Vendor, Product, MarketDate, Order, PricingUnit, ProductType } from '@/types';
 import { PRICING_UNIT_LABELS } from '@/types';
 
 interface AdminState {
@@ -18,6 +18,7 @@ interface AdminState {
   orders: (Order & { vendors: Vendor })[];
   selectedVendor: Vendor | null;
   editingProduct: Product | null;
+  editingVendor: Vendor | null;
   loading: boolean;
   newOrdersCount: number;
 }
@@ -33,6 +34,7 @@ export default function AdminPage() {
     orders: [],
     selectedVendor: null,
     editingProduct: null,
+    editingVendor: null,
     loading: false,
     newOrdersCount: 0
   });
@@ -66,6 +68,26 @@ export default function AdminPage() {
     end_time: '18:30',
     weather_status: 'scheduled' as const
   });
+
+  const [editVendorForm, setEditVendorForm] = useState({
+    name: '',
+    contact_email: '',
+    contact_phone: '',
+    product_type: 'produce' as ProductType,
+    payment_method: 'cash' as Vendor['payment_method'],
+    business_description: ''
+  });
+
+  const [newVendorForm, setNewVendorForm] = useState({
+    name: '',
+    contact_email: '',
+    contact_phone: '',
+    product_type: 'produce' as ProductType,
+    payment_method: 'cash' as Vendor['payment_method'],
+    business_description: ''
+  });
+
+  const [showCreateVendor, setShowCreateVendor] = useState(false);
 
   // Admin password from environment variable
   const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'farmersmarket2024';
@@ -123,6 +145,140 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Error deleting vendor:', error);
       toast.error('Failed to delete vendor');
+    }
+  };
+
+  const handleEditVendor = (vendor: Vendor) => {
+    setState(prev => ({ ...prev, editingVendor: vendor }));
+    setEditVendorForm({
+      name: vendor.name,
+      contact_email: vendor.contact_email,
+      contact_phone: vendor.contact_phone || '',
+      product_type: vendor.product_type,
+      payment_method: vendor.payment_method || 'cash',
+      business_description: ''
+    });
+  };
+
+  const handleUpdateVendor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!state.editingVendor) return;
+
+    try {
+      await vendorService.update(state.editingVendor.id, {
+        name: editVendorForm.name,
+        contact_email: editVendorForm.contact_email,
+        contact_phone: editVendorForm.contact_phone || undefined,
+        product_type: editVendorForm.product_type,
+        payment_method: editVendorForm.payment_method,
+      });
+
+      toast.success('Vendor updated successfully');
+      setState(prev => ({ ...prev, editingVendor: null }));
+      setEditVendorForm({
+        name: '',
+        contact_email: '',
+        contact_phone: '',
+        product_type: 'produce',
+        payment_method: 'cash',
+        business_description: ''
+      });
+      loadAdminData();
+    } catch (error) {
+      console.error('Error updating vendor:', error);
+      toast.error('Failed to update vendor');
+    }
+  };
+
+  const handleCreateVendor = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      await vendorService.create({
+        name: newVendorForm.name,
+        contact_email: newVendorForm.contact_email,
+        contact_phone: newVendorForm.contact_phone || '',
+        product_type: newVendorForm.product_type,
+        payment_method: newVendorForm.payment_method,
+        api_consent: true,
+        available_dates: [],
+        payment_connected: false,
+        payment_provider: undefined,
+        payment_connection_id: undefined,
+        payment_account_id: undefined
+      });
+
+      toast.success('Vendor created successfully');
+      setNewVendorForm({
+        name: '',
+        contact_email: '',
+        contact_phone: '',
+        product_type: 'produce',
+        payment_method: 'cash',
+        business_description: ''
+      });
+      setShowCreateVendor(false);
+      loadAdminData();
+    } catch (error) {
+      console.error('Error creating vendor:', error);
+      toast.error('Failed to create vendor');
+    }
+  };
+
+  const handleCancelVendorEdit = () => {
+    setState(prev => ({ ...prev, editingVendor: null }));
+    setEditVendorForm({
+      name: '',
+      contact_email: '',
+      contact_phone: '',
+      product_type: 'produce',
+      payment_method: 'cash',
+      business_description: ''
+    });
+  };
+
+  const handleConnectPayment = async (vendorId: string, provider: 'square' | 'stripe') => {
+    try {
+      // Generate OAuth URL
+      const response = await fetch('/api/oauth/config');
+      if (!response.ok) {
+        throw new Error('Failed to get OAuth configuration');
+      }
+
+      // Import the OAuth service dynamically
+      const { PaymentOAuthService } = await import('@/lib/paymentOAuth');
+      const authUrl = PaymentOAuthService.generateAuthUrl(provider, vendorId);
+      
+      // Open OAuth URL in new window
+      window.open(authUrl, '_blank');
+      toast.success(`Opening ${provider} authorization window...`);
+    } catch (error) {
+      console.error('Error initiating payment connection:', error);
+      toast.error('Failed to start payment connection');
+    }
+  };
+
+  const handleDisconnectPayment = async (vendorId: string) => {
+    if (!confirm('Are you sure you want to disconnect the payment provider? This will disable payment processing for this vendor.')) {
+      return;
+    }
+
+    try {
+      const vendor = state.vendors.find(v => v.id === vendorId);
+      if (!vendor?.payment_provider) {
+        toast.error('No payment provider connected');
+        return;
+      }
+
+      // Import the OAuth service dynamically
+      const { PaymentOAuthService } = await import('@/lib/paymentOAuth');
+      await PaymentOAuthService.disconnectProvider(vendorId, vendor.payment_provider);
+
+      toast.success('Payment provider disconnected');
+      loadAdminData();
+    } catch (error) {
+      console.error('Error disconnecting payment:', error);
+      toast.error('Failed to disconnect payment provider');
     }
   };
 
@@ -710,32 +866,81 @@ export default function AdminPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {/* Vendors Section */}
           <div className="bg-white rounded-lg shadow-lg p-6">
-            <h2 className="text-xl font-bold text-earth-800 mb-4">
-              Vendors ({state.vendors.length})
-            </h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-earth-800">
+                Vendors ({state.vendors.length})
+              </h2>
+              <button
+                onClick={() => setShowCreateVendor(true)}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium"
+              >
+                + Add New Vendor
+              </button>
+            </div>
             <div className="space-y-4 max-h-96 overflow-y-auto">
               {state.vendors.map((vendor) => (
                 <div key={vendor.id} className="border border-earth-200 rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h3 className="font-semibold text-earth-800">{vendor.name}</h3>
-                      <p className="text-sm text-earth-600">{vendor.contact_email}</p>
-                      <p className="text-sm text-earth-600">{vendor.contact_phone}</p>
-                      <p className="text-sm text-earth-600 capitalize">{vendor.product_type}</p>
-                      <p className="text-sm text-earth-600">Payment: {vendor.payment_method}</p>
+                      <p className="text-sm text-earth-600">📧 {vendor.contact_email}</p>
+                      <p className="text-sm text-earth-600">📞 {vendor.contact_phone}</p>
+                      <p className="text-sm text-earth-600 capitalize">🏷️ {vendor.product_type}</p>
+                      <p className="text-sm text-earth-600">💳 {vendor.payment_method}</p>
+                      
+                      {/* Payment Connection Status */}
+                      <div className="mt-2 flex items-center space-x-2">
+                        {vendor.payment_connected && vendor.payment_provider ? (
+                          <div className="flex items-center space-x-2">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              ✅ {vendor.payment_provider.toUpperCase()} Connected
+                            </span>
+                            <button
+                              onClick={() => handleDisconnectPayment(vendor.id)}
+                              className="text-xs text-red-600 hover:text-red-800 underline"
+                            >
+                              Disconnect
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center space-x-2">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              ⚠️ No Payment Connected
+                            </span>
+                            <button
+                              onClick={() => handleConnectPayment(vendor.id, 'square')}
+                              className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+                            >
+                              Connect Square
+                            </button>
+                            <button
+                              onClick={() => handleConnectPayment(vendor.id, 'stripe')}
+                              className="text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700"
+                            >
+                              Connect Stripe
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex flex-col space-y-2">
+                      <button
+                        onClick={() => handleEditVendor(vendor)}
+                        className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+                      >
+                        ✏️ Edit
+                      </button>
                       <button
                         onClick={() => setState(prev => ({ ...prev, selectedVendor: vendor }))}
                         className="bg-market-600 text-white px-3 py-1 rounded text-sm hover:bg-market-700"
                       >
-                        Add Product
+                        📦 Add Product
                       </button>
                       <button
                         onClick={() => handleDeleteVendor(vendor.id)}
                         className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
                       >
-                        Delete
+                        🗑️ Delete
                       </button>
                     </div>
                   </div>
@@ -1048,6 +1253,200 @@ export default function AdminPage() {
                   <button
                     type="button"
                     onClick={handleCancelEdit}
+                    className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Edit Vendor Section */}
+          {state.editingVendor && (
+            <div className="bg-white rounded-lg shadow-lg p-6 border-2 border-blue-200">
+              <h2 className="text-xl font-bold text-earth-800 mb-4">
+                Edit Vendor: {state.editingVendor.name}
+              </h2>
+              <form onSubmit={handleUpdateVendor} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Vendor Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editVendorForm.name}
+                    onChange={(e) => setEditVendorForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="input-field"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={editVendorForm.contact_email}
+                    onChange={(e) => setEditVendorForm(prev => ({ ...prev, contact_email: e.target.value }))}
+                    className="input-field"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={editVendorForm.contact_phone}
+                    onChange={(e) => setEditVendorForm(prev => ({ ...prev, contact_phone: e.target.value }))}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Product Type
+                  </label>
+                  <select
+                    value={editVendorForm.product_type}
+                    onChange={(e) => setEditVendorForm(prev => ({ ...prev, product_type: e.target.value as ProductType }))}
+                    className="input-field"
+                  >
+                    <option value="produce">Produce</option>
+                    <option value="meat">Meat</option>
+                    <option value="dairy">Dairy</option>
+                    <option value="baked_goods">Baked Goods</option>
+                    <option value="crafts">Crafts</option>
+                    <option value="artisan_goods">Artisan Goods</option>
+                    <option value="flowers">Flowers</option>
+                    <option value="honey">Honey</option>
+                    <option value="preserves">Preserves</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Payment Method
+                  </label>
+                  <select
+                    value={editVendorForm.payment_method || 'cash'}
+                    onChange={(e) => setEditVendorForm(prev => ({ ...prev, payment_method: e.target.value as Vendor['payment_method'] }))}
+                    className="input-field"
+                  >
+                    <option value="cash">Cash Only</option>
+                    <option value="card">Card Only</option>
+                    <option value="both">Cash & Card</option>
+                    <option value="square">Square</option>
+                    <option value="oauth">OAuth (Square/Stripe)</option>
+                  </select>
+                </div>
+                <div className="flex space-x-4">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700"
+                  >
+                    Update Vendor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelVendorEdit}
+                    className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Create Vendor Section */}
+          {showCreateVendor && (
+            <div className="bg-white rounded-lg shadow-lg p-6 border-2 border-green-200">
+              <h2 className="text-xl font-bold text-earth-800 mb-4">
+                Create New Vendor
+              </h2>
+              <form onSubmit={handleCreateVendor} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Vendor Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newVendorForm.name}
+                    onChange={(e) => setNewVendorForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="input-field"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={newVendorForm.contact_email}
+                    onChange={(e) => setNewVendorForm(prev => ({ ...prev, contact_email: e.target.value }))}
+                    className="input-field"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Phone
+                  </label>
+                  <input
+                    type="tel"
+                    value={newVendorForm.contact_phone}
+                    onChange={(e) => setNewVendorForm(prev => ({ ...prev, contact_phone: e.target.value }))}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Product Type
+                  </label>
+                  <select
+                    value={newVendorForm.product_type}
+                    onChange={(e) => setNewVendorForm(prev => ({ ...prev, product_type: e.target.value as ProductType }))}
+                    className="input-field"
+                  >
+                    <option value="produce">Produce</option>
+                    <option value="meat">Meat</option>
+                    <option value="dairy">Dairy</option>
+                    <option value="baked_goods">Baked Goods</option>
+                    <option value="crafts">Crafts</option>
+                    <option value="artisan_goods">Artisan Goods</option>
+                    <option value="flowers">Flowers</option>
+                    <option value="honey">Honey</option>
+                    <option value="preserves">Preserves</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-earth-700 mb-1">
+                    Payment Method
+                  </label>
+                  <select
+                    value={newVendorForm.payment_method || 'cash'}
+                    onChange={(e) => setNewVendorForm(prev => ({ ...prev, payment_method: e.target.value as Vendor['payment_method'] }))}
+                    className="input-field"
+                  >
+                    <option value="cash">Cash Only</option>
+                    <option value="card">Card Only</option>
+                    <option value="both">Cash & Card</option>
+                    <option value="square">Square</option>
+                    <option value="oauth">OAuth (Square/Stripe)</option>
+                  </select>
+                </div>
+                <div className="flex space-x-4">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700"
+                  >
+                    Create Vendor
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateVendor(false)}
                     className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700"
                   >
                     Cancel
