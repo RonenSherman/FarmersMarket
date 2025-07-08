@@ -262,8 +262,28 @@ export default function AdminPage() {
       const { authUrl } = await response.json();
       
       // Open OAuth URL in new window
-      window.open(authUrl, '_blank');
+      const oauthWindow = window.open(authUrl, '_blank', 'width=600,height=600');
       toast.success(`Opening ${provider} authorization window...`);
+      
+      // Monitor the OAuth window and refresh data when it closes
+      const checkClosed = setInterval(() => {
+        if (oauthWindow && oauthWindow.closed) {
+          clearInterval(checkClosed);
+          console.log('🔄 OAuth window closed, refreshing vendor data...');
+          
+          // Wait a moment for the OAuth process to complete on the server
+          setTimeout(() => {
+            loadAdminData();
+            toast.success(`${provider} connection completed! Refreshing vendor list...`);
+          }, 1000);
+        }
+      }, 1000);
+      
+      // Clean up the interval after 5 minutes (in case window doesn't close properly)
+      setTimeout(() => {
+        clearInterval(checkClosed);
+      }, 5 * 60 * 1000);
+      
     } catch (error) {
       console.error('Error initiating payment connection:', error);
       toast.error(`Failed to start payment connection: ${error instanceof Error ? error.message : 'Unknown error'}`);
