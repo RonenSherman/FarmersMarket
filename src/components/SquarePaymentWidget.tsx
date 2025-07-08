@@ -5,8 +5,8 @@ import { toast } from 'react-hot-toast';
 
 // Square Payment Widget Component
 // Note: Ensure you're testing with the correct vendor ID that has payment_connected: false
-// Fixed vendor ID for testing: ec4e7d69-22d9-4bf4-855c-56fac9b511f5
-// Last updated: January 2025
+// CORRECTED vendor ID for testing: b6a3eb4e-3bbb-4e35-a9b8-79f8ec4550c2
+// Last updated: January 2025 - Fixed data mismatch issue
 
 interface SquarePaymentWidgetProps {
   vendorId: string;
