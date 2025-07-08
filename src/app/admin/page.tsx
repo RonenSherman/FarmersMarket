@@ -878,8 +878,8 @@ export default function AdminPage() {
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-earth-800">
-                Vendors ({state.vendors.length})
-              </h2>
+              Vendors ({state.vendors.length})
+            </h2>
               <button
                 onClick={() => setShowCreateVendor(true)}
                 className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium"
@@ -911,7 +911,7 @@ export default function AdminPage() {
                             >
                               Disconnect
                             </button>
-                          </div>
+                    </div>
                         ) : (
                           <div className="flex items-center space-x-2">
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
