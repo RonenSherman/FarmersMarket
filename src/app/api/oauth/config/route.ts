@@ -39,7 +39,10 @@ export async function POST(request: Request) {
   try {
     const { vendorId, provider } = await request.json();
 
+    console.log('🔍 [OAuth Config] Request received:', { vendorId, provider });
+
     if (!vendorId || !provider) {
+      console.log('❌ [OAuth Config] Missing required parameters');
       return NextResponse.json(
         { error: 'Vendor ID and provider are required' },
         { status: 400 }
@@ -47,6 +50,7 @@ export async function POST(request: Request) {
     }
 
     // Get payment connection for vendor
+    console.log('🔍 [OAuth Config] Querying payment_connections for:', { vendorId, provider });
     const { data: connection, error } = await supabase
       .from('payment_connections')
       .select('*')
@@ -55,7 +59,10 @@ export async function POST(request: Request) {
       .eq('connection_status', 'active')
       .single();
 
+    console.log('🔍 [OAuth Config] Query result:', { connection, error });
+
     if (error || !connection) {
+      console.log('❌ [OAuth Config] No active payment connection found');
       return NextResponse.json(
         { error: 'No active payment connection found for this vendor' },
         { status: 404 }
@@ -63,11 +70,13 @@ export async function POST(request: Request) {
     }
 
     if (provider === 'square') {
-      return NextResponse.json({
+      const config = {
         applicationId: process.env.NEXT_PUBLIC_SQUARE_CLIENT_ID || process.env.SQUARE_CLIENT_ID,
         locationId: connection.metadata?.location_id || connection.provider_account_id,
         environment: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'
-      });
+      };
+      console.log('✅ [OAuth Config] Returning Square config:', config);
+      return NextResponse.json(config);
     } else if (provider === 'stripe') {
       if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
         return NextResponse.json(

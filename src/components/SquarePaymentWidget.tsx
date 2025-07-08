@@ -27,17 +27,24 @@ export function SquarePaymentWidget({
   useEffect(() => {
     const loadSquareConfig = async () => {
       try {
+        console.log('🔍 [Square Widget] Loading config for vendorId:', vendorId);
+        
         const response = await fetch('/api/oauth/config', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ vendorId, provider: 'square' })
         });
 
+        console.log('🔍 [Square Widget] Config response status:', response.status);
+
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('🔍 [Square Widget] Config response error:', errorText);
           throw new Error('Failed to load Square configuration');
         }
 
         const config = await response.json();
+        console.log('🔍 [Square Widget] Config received:', config);
         setApplicationId(config.applicationId);
         setLocationId(config.locationId);
         
