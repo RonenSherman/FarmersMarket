@@ -1,7 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { toast } from 'react-hot-toast';
+
+// Square Payment Widget Component
+// Note: Ensure you're testing with the correct vendor ID that has payment_connected: false
+// Fixed vendor ID for testing: ec4e7d69-22d9-4bf4-855c-56fac9b511f5
+// Last updated: January 2025
 
 interface SquarePaymentWidgetProps {
   vendorId: string;
