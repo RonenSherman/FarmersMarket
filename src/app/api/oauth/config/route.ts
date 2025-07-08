@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 // Updated: Square OAuth config endpoint - ready for testing with correct vendor ID
 // Current test vendor: Ronen Sherman (b6a3eb4e-3bbb-4e35-a9b8-79f8ec4550c2)
 // Payment connections reset to clean state for fresh Square OAuth testing
-// Fixed data inconsistency issue and improved error handling - trigger redeploy
+// Fixed data inconsistency issue and improved error handling - trigger redeploy Jan 2025
 
 export async function GET() {
   try {
