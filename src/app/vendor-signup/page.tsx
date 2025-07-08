@@ -286,7 +286,7 @@ export default function VendorSignupPage() {
                   </span>
                 </div>
                 <p className="text-green-700 text-sm">
-                  You're all set to receive payments when your application is approved.
+                  You're all set to receive payments.
                 </p>
               </div>
             ) : (
@@ -309,7 +309,7 @@ export default function VendorSignupPage() {
                 <li>• Your application will be reviewed within 2-3 business days</li>
                 <li>• You'll receive an email confirmation with your application status</li>
                 <li>• Market coordinators will contact you to discuss setup details</li>
-                <li>• Once approved, you'll gain access to the vendor portal</li>
+                <li>• You'll gain access to the vendor portal</li>
                 <li>• You can then add products and manage your market presence</li>
               </ul>
             </div>

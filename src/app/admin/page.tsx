@@ -148,28 +148,7 @@ export default function AdminPage() {
     }
   };
 
-  const handleToggleApproval = async (vendorId: string, currentApprovalStatus: boolean) => {
-    const newStatus = !currentApprovalStatus;
-    const actionText = newStatus ? 'approve' : 'revoke approval for';
-    
-    if (!confirm(`Are you sure you want to ${actionText} this vendor?`)) {
-      return;
-    }
 
-    try {
-      await vendorService.update(vendorId, {
-        is_approved: newStatus,
-        approved: newStatus,
-        updated_at: new Date().toISOString()
-      });
-      
-      toast.success(`Vendor ${newStatus ? 'approved' : 'approval revoked'} successfully`);
-      loadAdminData();
-    } catch (error) {
-      console.error('Error updating vendor approval:', error);
-      toast.error('Failed to update vendor approval');
-    }
-  };
 
   const handleEditVendor = (vendor: Vendor) => {
     setState(prev => ({ ...prev, editingVendor: vendor }));
@@ -957,31 +936,6 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <div className="flex flex-col space-y-2">
-                      {/* Approval Status and Button */}
-                      <div className="flex items-center space-x-2">
-                        {vendor.is_approved || vendor.approved ? (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            ✅ Approved
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                            ⏳ Pending
-                          </span>
-                        )}
-                      </div>
-                      
-                      {/* Approval Toggle Button */}
-                      <button
-                        onClick={() => handleToggleApproval(vendor.id, Boolean(vendor.is_approved || vendor.approved))}
-                        className={`px-3 py-1 rounded text-sm font-medium ${
-                          vendor.is_approved || vendor.approved
-                            ? 'bg-yellow-600 text-white hover:bg-yellow-700'
-                            : 'bg-green-600 text-white hover:bg-green-700'
-                        }`}
-                      >
-                        {vendor.is_approved || vendor.approved ? '🚫 Revoke' : '✅ Approve'}
-                      </button>
-                      
                       <button
                         onClick={() => handleEditVendor(vendor)}
                         className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"

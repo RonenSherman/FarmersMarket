@@ -79,8 +79,7 @@ export async function GET(request: NextRequest) {
           name: vendor.name,
           contact_email: vendor.contact_email,
           // Check for approval fields
-          is_approved: vendor.is_approved,
-          approved: vendor.approved,
+          
           is_active: vendor.is_active,
           active: vendor.active,
           // Check for payment fields  
@@ -111,7 +110,7 @@ export async function GET(request: NextRequest) {
         'payment_connection_id', 'payment_connected_at', 'payment_last_verified'
       ];
 
-      const approvalFields = ['is_approved', 'approved', 'is_active', 'active'];
+      const approvalFields = ['is_active', 'active'];
 
       if (vendors.length > 0) {
         const sampleVendor = vendors[0];
@@ -132,14 +131,8 @@ export async function GET(request: NextRequest) {
         });
 
         // Check approval field consistency
-        const hasIsApproved = actualFields.includes('is_approved');
-        const hasApproved = actualFields.includes('approved');
-        const hasIsActive = actualFields.includes('is_active');
+                const hasIsActive = actualFields.includes('is_active');
         const hasActive = actualFields.includes('active');
-
-        if (!hasIsApproved && !hasApproved) {
-          diagnostics.schema_issues.push('No approval field found (neither is_approved nor approved)');
-        }
         if (!hasIsActive && !hasActive) {
           diagnostics.schema_issues.push('No active field found (neither is_active nor active)');
         }
@@ -149,9 +142,7 @@ export async function GET(request: NextRequest) {
           const vendorIssues = [];
           
           // Check approval status
-          if (vendor.is_approved === false || vendor.approved === false) {
-            vendorIssues.push('Not approved');
-          }
+          
           
           // Check active status
           if (vendor.is_active === false || vendor.active === false) {

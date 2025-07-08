@@ -16,7 +16,7 @@ INSERT INTO vendors (
     api_consent, 
     payment_method, 
     available_dates,
-    is_approved,
+    
     is_active,
     description
 ) VALUES 

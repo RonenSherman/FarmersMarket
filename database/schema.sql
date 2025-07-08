@@ -28,7 +28,7 @@ CREATE TABLE vendors (
     api_consent BOOLEAN NOT NULL DEFAULT false,
     payment_method VARCHAR(20) NOT NULL CHECK (payment_method IN ('card', 'cash', 'both')),
     available_dates TEXT[] NOT NULL DEFAULT '{}',
-    is_approved BOOLEAN DEFAULT false,
+  
     is_active BOOLEAN DEFAULT true,
     profile_image_url TEXT,
     description TEXT,
@@ -42,7 +42,7 @@ CREATE TABLE vendors (
 -- Create indexes for vendors table
 CREATE INDEX idx_vendors_product_type ON vendors(product_type);
 CREATE INDEX idx_vendors_email ON vendors(contact_email);
-CREATE INDEX idx_vendors_approved ON vendors(is_approved);
+
 CREATE INDEX idx_vendors_active ON vendors(is_active);
 CREATE INDEX idx_vendors_dates ON vendors USING GIN(available_dates);
 
@@ -274,8 +274,8 @@ CREATE POLICY "Vendors can view own orders" ON orders FOR SELECT USING (
     vendor_id IN (SELECT id FROM vendors WHERE contact_email = auth.jwt() ->> 'email')
 );
 
--- Public read access for approved vendors and available products
-CREATE POLICY "Public can view approved vendors" ON vendors FOR SELECT USING (is_approved = true AND is_active = true);
+-- Public read access for active vendors and available products
+CREATE POLICY "Public can view active vendors" ON vendors FOR SELECT USING (is_active = true);
 
 -- =============================================
 -- INITIAL DATA
@@ -313,7 +313,7 @@ SELECT
 FROM vendors v
 LEFT JOIN orders o ON v.id = o.vendor_id AND o.order_status = 'completed'
 LEFT JOIN customer_feedback cf ON v.id = cf.vendor_id AND cf.is_public = true
-WHERE v.is_approved = true
+WHERE v.is_active = true
 GROUP BY v.id, v.name, v.product_type, v.contact_email;
 
 -- Market date performance view
@@ -386,7 +386,7 @@ CREATE INDEX idx_products_vendor_available ON products(vendor_id, available);
 CREATE INDEX idx_products_category_available ON products(category, available);
 
 -- Partial indexes for performance
-CREATE INDEX idx_active_vendors ON vendors(name) WHERE is_approved = true AND is_active = true;
+CREATE INDEX idx_active_vendors ON vendors(name) WHERE is_active = true;
 CREATE INDEX idx_available_products ON products(name) WHERE available = true;
 CREATE INDEX idx_future_markets ON market_dates(date) WHERE is_active = true;
 
