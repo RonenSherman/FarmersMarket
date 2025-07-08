@@ -239,22 +239,32 @@ export default function AdminPage() {
 
   const handleConnectPayment = async (vendorId: string, provider: 'square' | 'stripe') => {
     try {
-      // Generate OAuth URL
-      const response = await fetch('/api/oauth/config');
+      // Generate OAuth URL via server-side endpoint
+      const response = await fetch('/api/oauth/generate-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          provider,
+          vendorId,
+          source: 'admin'
+        })
+      });
+
       if (!response.ok) {
-        throw new Error('Failed to get OAuth configuration');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate OAuth URL');
       }
 
-      // Import the OAuth service dynamically
-      const { PaymentOAuthService } = await import('@/lib/paymentOAuth');
-      const authUrl = PaymentOAuthService.generateAuthUrl(provider, vendorId, 'admin');
+      const { authUrl } = await response.json();
       
       // Open OAuth URL in new window
       window.open(authUrl, '_blank');
       toast.success(`Opening ${provider} authorization window...`);
     } catch (error) {
       console.error('Error initiating payment connection:', error);
-      toast.error('Failed to start payment connection');
+      toast.error(`Failed to start payment connection: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 

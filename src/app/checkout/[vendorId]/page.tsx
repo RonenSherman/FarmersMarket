@@ -448,8 +448,8 @@ ${customerInfo.special_instructions ? `SPECIAL INSTRUCTIONS: ${customerInfo.spec
                   <h3 className="font-medium text-yellow-800 mb-2">⚠️ Payment Not Available</h3>
                   <p className="text-sm text-yellow-700">
                     This vendor has not connected a payment processor yet. Please contact them directly to arrange payment.
-                  </p>
-                </div>
+                </p>
+              </div>
               )}
 
               <div className="flex space-x-4">
