@@ -86,55 +86,31 @@ export async function POST(request: NextRequest) {
     if (error || !connection) {
       console.log('❌ [OAuth Config] No active payment connection found');
       
-      // For ANY vendor that has payment_connected=true but no connection record (data inconsistency fix)
-      if (vendor.payment_connected && (vendor.payment_provider === provider || provider === 'square')) {
-        console.log('🔧 [OAuth Config] Creating missing connection for vendor with payment_connected=true');
+      // For vendors that have payment_connected=true but no connection record (data inconsistency)
+      if (vendor.payment_connected && vendor.payment_provider === provider) {
+        console.log('🔧 [OAuth Config] Data inconsistency detected - vendor has payment_connected=true but no connection record');
         console.log('🔧 [OAuth Config] Vendor:', vendor.name, 'ID:', vendorId);
         
-        const newConnection = {
-          vendor_id: vendorId,
-          provider: provider,
-          provider_account_id: vendor.payment_account_id || `account_${vendorId.substring(0, 8)}`,
-          access_token_hash: 'restored_token_' + Date.now(),
-          connection_status: 'active',
-          metadata: {
-            location_id: vendor.payment_account_id || `location_${vendorId.substring(0, 8)}`,
-            merchant_id: `merchant_${vendorId.substring(0, 8)}`,
-            application_id: process.env.NEXT_PUBLIC_SQUARE_CLIENT_ID || 'sq0idp-wGVapF8sNt9PLrdj5znuKA',
-            restored: true,
-            restored_at: new Date().toISOString()
-          },
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-
-        const { data: createdConnection, error: createError } = await supabase
-          .from('payment_connections')
-          .insert(newConnection)
-          .select()
-          .single();
-
-        if (createError) {
-          console.log('❌ [OAuth Config] Failed to create connection:', createError);
-          return NextResponse.json(
-            { error: 'No active payment connection found for this vendor' },
-            { status: 404 }
-          );
-        }
-
-        console.log('✅ [OAuth Config] Created connection for', vendor.name, ':', createdConnection.id);
-        
-        // Update vendor status to reference the new connection
+        // Reset vendor payment status to match reality
         await supabase
           .from('vendors')
-          .update({ 
-            payment_connection_id: createdConnection.id,
-            payment_connected_at: new Date().toISOString()
+          .update({
+            payment_connected: false,
+            payment_provider: null,
+            payment_connection_id: null,
+            payment_account_id: null,
+            payment_connected_at: null,
+            payment_last_verified: null,
+            updated_at: new Date().toISOString()
           })
           .eq('id', vendorId);
 
-        // Use the newly created connection
-        connection = createdConnection;
+        console.log('🔧 [OAuth Config] Reset vendor payment status to false');
+        
+        return NextResponse.json(
+          { error: 'Payment connection was reset due to data inconsistency. Please reconnect your payment provider.' },
+          { status: 404 }
+        );
       } else {
         console.log('❌ [OAuth Config] Vendor payment_connected:', vendor.payment_connected, 'provider:', vendor.payment_provider);
         return NextResponse.json(
