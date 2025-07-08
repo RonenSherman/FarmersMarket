@@ -93,7 +93,11 @@ export class PaymentOAuthService {
    * Exchange authorization code for access token (Square)
    */
   static async exchangeSquareCode(code: string, vendorId: string): Promise<PaymentConnection> {
-    const response = await fetch('/api/oauth/square/exchange', {
+    // Build full URL for server-side requests
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const exchangeUrl = `${baseUrl}/api/oauth/square/exchange`;
+    
+    const response = await fetch(exchangeUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code, vendorId })
@@ -111,7 +115,11 @@ export class PaymentOAuthService {
    * Exchange authorization code for access token (Stripe)
    */
   static async exchangeStripeCode(code: string, vendorId: string): Promise<PaymentConnection> {
-    const response = await fetch('/api/oauth/stripe/exchange', {
+    // Build full URL for server-side requests
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const exchangeUrl = `${baseUrl}/api/oauth/stripe/exchange`;
+    
+    const response = await fetch(exchangeUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code, vendorId })
@@ -148,7 +156,8 @@ export class PaymentOAuthService {
    */
   static async disconnectProvider(vendorId: string, provider: 'square' | 'stripe'): Promise<void> {
     // First revoke the connection with the provider
-    await fetch('/api/oauth/revoke', {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    await fetch(`${baseUrl}/api/oauth/revoke`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ vendorId, provider })
@@ -186,7 +195,8 @@ export class PaymentOAuthService {
    */
   static async verifyConnection(vendorId: string): Promise<boolean> {
     try {
-      const response = await fetch('/api/oauth/verify', {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const response = await fetch(`${baseUrl}/api/oauth/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vendorId })
@@ -203,7 +213,8 @@ export class PaymentOAuthService {
    * Process payment for an order
    */
   static async processOrderPayment(orderId: string, vendorId: string): Promise<any> {
-    const response = await fetch('/api/payments/process', {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/payments/process`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ orderId, vendorId })
