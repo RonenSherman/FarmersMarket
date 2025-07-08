@@ -144,12 +144,28 @@ export async function POST(request: NextRequest) {
     }
 
     if (provider === 'square') {
+      const locationId = connection.metadata?.location_id;
+      
+      if (!locationId) {
+        console.error('❌ [OAuth Config] No location_id found in connection metadata');
+        console.error('📋 [OAuth Config] Connection metadata:', connection.metadata);
+        console.error('📋 [OAuth Config] Using provider_account_id as fallback:', connection.provider_account_id);
+      }
+      
       const config = {
         applicationId: process.env.NEXT_PUBLIC_SQUARE_CLIENT_ID || process.env.SQUARE_CLIENT_ID,
-        locationId: connection.metadata?.location_id || connection.provider_account_id,
+        locationId: locationId || connection.provider_account_id, // fallback to merchant_id if no location_id
         environment: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox'
       };
-      console.log('✅ [OAuth Config] Returning Square config:', config);
+      
+      console.log('✅ [OAuth Config] Returning Square config:', {
+        applicationId: config.applicationId?.substring(0, 15) + '...',
+        locationId: config.locationId,
+        environment: config.environment,
+        hasLocationId: !!locationId,
+        usingFallback: !locationId
+      });
+      
       return NextResponse.json(config);
     } else if (provider === 'stripe') {
       if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {

@@ -119,6 +119,49 @@ export async function POST(request: NextRequest) {
       merchantData = merchantResult.merchant?.[0] || null;
     }
 
+    // Get merchant locations - this is critical for the payment widget
+    const locationsResponse = await fetch(
+      process.env.NODE_ENV === 'production'
+        ? 'https://connect.squareup.com/v2/locations'
+        : 'https://connect.squareupsandbox.com/v2/locations',
+      {
+        headers: {
+          'Authorization': `Bearer ${access_token}`,
+          'Square-Version': '2023-10-18',
+        },
+      }
+    );
+
+    let locationId = null;
+    if (locationsResponse.ok) {
+      const locationsResult = await locationsResponse.json();
+      // Get the first active location
+      const activeLocation = locationsResult.locations?.find((loc: any) => loc.status === 'ACTIVE');
+      locationId = activeLocation?.id || locationsResult.locations?.[0]?.id;
+      
+      console.log('📍 Square locations found:', {
+        totalLocations: locationsResult.locations?.length || 0,
+        activeLocation: activeLocation?.id,
+        selectedLocationId: locationId
+      });
+    } else {
+      console.error('❌ Failed to get Square locations:', {
+        status: locationsResponse.status,
+        statusText: locationsResponse.statusText
+      });
+    }
+
+    // Ensure we have a location ID - this is critical for the payment widget
+    if (!locationId) {
+      console.error('❌ No location ID found - Square payment widget will not work');
+      return NextResponse.json(
+        { error: 'Failed to get Square location ID. Please ensure your Square account has at least one location configured.' },
+        { status: 400 }
+      );
+    }
+
+    console.log('✅ Square location ID obtained:', locationId);
+
     // Encrypt tokens (in production, use proper encryption)
     const accessTokenHash = Buffer.from(access_token).toString('base64');
     const refreshTokenHash = refresh_token ? Buffer.from(refresh_token).toString('base64') : null;
@@ -141,6 +184,7 @@ export async function POST(request: NextRequest) {
             merchant_name: merchantData?.business_name || '',
             country: merchantData?.country || '',
             currency: merchantData?.currency || 'USD',
+            location_id: locationId,
           },
           updated_at: new Date().toISOString(),
         },
