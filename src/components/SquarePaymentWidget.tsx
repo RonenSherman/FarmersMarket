@@ -50,7 +50,9 @@ export function SquarePaymentWidget({
           // Handle specific error messages
           if (errorData.error && errorData.error.includes('data inconsistency')) {
             throw new Error('Payment connection needs to be reset. Please contact support to reconnect your payment provider.');
-          } else if (errorData.error && errorData.error.includes('No active payment connection')) {
+          } else if (errorData.error && errorData.error.includes('exists but is not active')) {
+            throw new Error('Payment connection expired. Please reconnect your payment provider.');
+          } else if (errorData.error && errorData.error.includes('No payment connection')) {
             throw new Error('Payment provider not connected. Please set up payment processing first.');
           } else {
             throw new Error('Failed to load Square configuration');

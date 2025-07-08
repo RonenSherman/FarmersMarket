@@ -83,13 +83,26 @@ export async function POST(request: NextRequest) {
 
     console.log('🔍 [OAuth Config] Query result:', { connection, error });
 
-    // If no active connection found, handle vendor with missing payment connection
+    // If no active connection found, check for any connections first
     if (error || !connection) {
       console.log('❌ [OAuth Config] No active payment connection found');
       
-      // For vendors that have payment_connected=true but no connection record (data inconsistency)
-      if (vendor.payment_connected && vendor.payment_provider === provider) {
-        console.log('🔧 [OAuth Config] Data inconsistency detected - vendor has payment_connected=true but no connection record');
+      // Check if there are any connections for this vendor/provider (regardless of status)
+      const { data: anyConnections, error: anyError } = await supabase
+        .from('payment_connections')
+        .select('connection_status, created_at')
+        .eq('vendor_id', vendorId)
+        .eq('provider', provider)
+        .order('created_at', { ascending: false });
+
+      console.log('🔍 [OAuth Config] Any connections found:', { 
+        count: anyConnections?.length || 0, 
+        connections: anyConnections 
+      });
+
+      // If vendor says connected but we have no connections at all, it's a real inconsistency
+      if (vendor.payment_connected && vendor.payment_provider === provider && (!anyConnections || anyConnections.length === 0)) {
+        console.log('🔧 [OAuth Config] True data inconsistency - vendor says connected but no connection records exist');
         console.log('🔧 [OAuth Config] Vendor:', vendor.name, 'ID:', vendorId);
         
         // Reset vendor payment status to match reality
@@ -112,10 +125,19 @@ export async function POST(request: NextRequest) {
           { error: 'Payment connection was reset due to data inconsistency. Please reconnect your payment provider.' },
           { status: 404 }
         );
+      } else if (anyConnections && anyConnections.length > 0) {
+        // There are connections but none are active - connection might be expired/revoked
+        console.log('🔍 [OAuth Config] Found connections but none are active:', anyConnections.map(c => c.connection_status));
+        
+        return NextResponse.json(
+          { error: 'Payment connection exists but is not active. Please reconnect your payment provider.' },
+          { status: 404 }
+        );
       } else {
+        // No connections and vendor doesn't claim to be connected
         console.log('❌ [OAuth Config] Vendor payment_connected:', vendor.payment_connected, 'provider:', vendor.payment_provider);
         return NextResponse.json(
-          { error: 'No active payment connection found for this vendor' },
+          { error: 'No payment connection found for this vendor' },
           { status: 404 }
         );
       }
