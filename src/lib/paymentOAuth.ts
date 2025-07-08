@@ -93,22 +93,51 @@ export class PaymentOAuthService {
    * Exchange authorization code for access token (Square)
    */
   static async exchangeSquareCode(code: string, vendorId: string): Promise<PaymentConnection> {
+    console.log('🔧 PaymentOAuthService.exchangeSquareCode: Starting');
+    console.log('📋 Parameters:', {
+      hasCode: !!code,
+      codeLength: code?.length,
+      vendorId: vendorId
+    });
+    
     // Build full URL for server-side requests
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const exchangeUrl = `${baseUrl}/api/oauth/square/exchange`;
     
-    const response = await fetch(exchangeUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, vendorId })
-    });
+    console.log('🔗 Making request to:', exchangeUrl);
+    
+    try {
+      const response = await fetch(exchangeUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, vendorId })
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-      throw new Error(`Failed to exchange Square authorization code: ${errorData.error}`);
+      console.log('📋 Response status:', response.status);
+      console.log('📋 Response ok:', response.ok);
+
+      if (!response.ok) {
+        console.log('❌ Exchange request failed');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.log('📋 Error data:', JSON.stringify(errorData, null, 2));
+        throw new Error(`Failed to exchange Square authorization code: ${errorData.error}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Exchange successful');
+      console.log('📋 Result:', {
+        connectionId: result.id,
+        vendorId: result.vendor_id,
+        provider: result.provider,
+        status: result.connection_status
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('❌ PaymentOAuthService.exchangeSquareCode: Failed');
+      console.error('📋 Error:', error);
+      throw error;
     }
-
-    return response.json();
   }
 
   /**

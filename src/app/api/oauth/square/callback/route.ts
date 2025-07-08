@@ -41,8 +41,24 @@ export async function GET(request: NextRequest) {
     // Check if this is an admin-initiated connection
     if (stateData.source === 'admin' && stateData.vendorId) {
       try {
+        console.log('🔧 Admin Square OAuth: Starting exchange process');
+        console.log('📋 Parameters:', {
+          hasCode: !!code,
+          codeLength: code?.length,
+          vendorId: stateData.vendorId,
+          source: stateData.source
+        });
+        
         // Directly exchange the code for admin connections
-        await PaymentOAuthService.exchangeSquareCode(code, stateData.vendorId);
+        const result = await PaymentOAuthService.exchangeSquareCode(code, stateData.vendorId);
+        
+        console.log('✅ Admin Square OAuth: Exchange successful');
+        console.log('📋 Result:', {
+          connectionId: result.id,
+          vendorId: result.vendor_id,
+          provider: result.provider,
+          status: result.connection_status
+        });
         
         // Return success page that closes the popup
         return new NextResponse(`
@@ -65,7 +81,19 @@ export async function GET(request: NextRequest) {
           headers: { 'Content-Type': 'text/html' }
         });
       } catch (exchangeError) {
-        console.error('Square exchange error:', exchangeError);
+        console.error('❌ Admin Square OAuth: Exchange failed');
+        console.error('📋 Error details:', {
+          error: exchangeError,
+          message: exchangeError instanceof Error ? exchangeError.message : 'Unknown error',
+          stack: exchangeError instanceof Error ? exchangeError.stack : undefined,
+          vendorId: stateData.vendorId,
+          hasCode: !!code,
+          codeLength: code?.length
+        });
+        
+        // Log the full error for debugging
+        console.error('Full exchangeError object:', JSON.stringify(exchangeError, null, 2));
+        
         return new NextResponse(`
           <!DOCTYPE html>
           <html>
