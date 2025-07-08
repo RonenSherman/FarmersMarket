@@ -1,76 +1,91 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
-export async function GET(request: NextRequest) {
-  console.log('🔧 Debug vendor payment endpoint called');
+export async function POST(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const vendorId = searchParams.get('vendorId');
+    const { vendorId } = await request.json();
 
-    if (!vendorId) {
-      return NextResponse.json({ error: 'vendorId required' }, { status: 400 });
-    }
+    console.log('🔍 [Debug Vendor Payment] Starting debug for vendor:', vendorId);
 
-    // Create service role client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    
-    if (!supabaseUrl || !serviceRoleKey) {
-      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
-    }
-    
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
-
-    // Get vendor record
+    // Get vendor information
     const { data: vendor, error: vendorError } = await supabase
       .from('vendors')
-      .select('*')
+      .select('id, name, email, payment_connected, payment_provider')
       .eq('id', vendorId)
       .single();
 
-    if (vendorError) {
-      return NextResponse.json({ 
-        error: 'Vendor not found', 
-        details: vendorError 
-      }, { status: 404 });
-    }
+    console.log('🔍 [Debug Vendor Payment] Vendor query result:', { vendor, vendorError });
 
-    // Get payment connections for this vendor
+    // Get all payment connections for this vendor
     const { data: connections, error: connectionsError } = await supabase
       .from('payment_connections')
       .select('*')
       .eq('vendor_id', vendorId);
 
-    if (connectionsError) {
-      console.error('Error fetching connections:', connectionsError);
+    console.log('🔍 [Debug Vendor Payment] Payment connections query result:', { connections, connectionsError });
+
+    // Get active payment connections only
+    const { data: activeConnections, error: activeError } = await supabase
+      .from('payment_connections')
+      .select('*')
+      .eq('vendor_id', vendorId)
+      .eq('connection_status', 'active');
+
+    console.log('🔍 [Debug Vendor Payment] Active payment connections:', { activeConnections, activeError });
+
+    // Get Square connections specifically
+    const { data: squareConnections, error: squareError } = await supabase
+      .from('payment_connections')
+      .select('*')
+      .eq('vendor_id', vendorId)
+      .eq('provider', 'square');
+
+    console.log('🔍 [Debug Vendor Payment] Square connections:', { squareConnections, squareError });
+
+    // Check if vendor exists
+    if (vendorError || !vendor) {
+      return NextResponse.json({
+        error: 'Vendor not found',
+        vendorId,
+        details: vendorError
+      }, { status: 404 });
     }
 
-    return NextResponse.json({
-      vendorId,
-      vendorName: vendor.name,
-      vendor: {
+    // Summary of findings
+    const summary = {
+      vendorInfo: {
+        id: vendor.id,
+        name: vendor.name,
+        email: vendor.email,
         payment_connected: vendor.payment_connected,
-        payment_provider: vendor.payment_provider,
-        payment_connection_id: vendor.payment_connection_id,
-        payment_account_id: vendor.payment_account_id,
-        payment_connected_at: vendor.payment_connected_at,
-        payment_last_verified: vendor.payment_last_verified
+        payment_provider: vendor.payment_provider
       },
-      connections: connections || [],
-      connectionCount: connections?.length || 0,
-      summary: {
+      paymentConnections: {
+        total: connections?.length || 0,
+        active: activeConnections?.length || 0,
+        square: squareConnections?.length || 0,
+        allConnections: connections || [],
+        activeConnections: activeConnections || [],
+        squareConnections: squareConnections || []
+      },
+      diagnosis: {
         vendorSaysConnected: vendor.payment_connected,
-        actualConnections: connections?.length || 0,
-        hasActiveConnection: connections?.some(c => c.connection_status === 'active') || false,
-        mismatch: vendor.payment_connected && (connections?.length || 0) === 0
+        actualActiveConnections: activeConnections?.length || 0,
+        hasSquareConnection: (squareConnections?.length || 0) > 0,
+        hasActiveSquareConnection: activeConnections?.some(c => c.provider === 'square') || false,
+        mismatchDetected: vendor.payment_connected && (activeConnections?.length || 0) === 0
       }
-    });
+    };
+
+    console.log('✅ [Debug Vendor Payment] Summary:', summary);
+
+    return NextResponse.json(summary);
 
   } catch (error) {
-    console.error('Debug vendor payment error:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    console.error('❌ [Debug Vendor Payment] Error:', error);
+    return NextResponse.json(
+      { error: 'Debug failed', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
   }
 } 
