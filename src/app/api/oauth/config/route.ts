@@ -1,6 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { PaymentOAuthService } from '@/lib/paymentOAuth';
 import { supabase } from '@/lib/supabase';
+
+// Updated: Square OAuth config endpoint - ready for testing with correct vendor ID
+// Current test vendor: Ronen Sherman (b6a3eb4e-3bbb-4e35-a9b8-79f8ec4550c2)
+// Payment connections reset to clean state for fresh Square OAuth testing
 
 export async function GET() {
   try {
@@ -35,7 +39,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { vendorId, provider } = await request.json();
 
