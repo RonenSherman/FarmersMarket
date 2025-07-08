@@ -13,6 +13,11 @@ export interface Vendor {
   payment_account_id?: string;
   payment_connected_at?: string;
   payment_last_verified?: string;
+  // Approval fields (database uses both is_approved and approved for compatibility)
+  is_approved?: boolean;
+  approved?: boolean;
+  is_active?: boolean;
+  active?: boolean;
   created_at: string;
   updated_at: string;
 }
